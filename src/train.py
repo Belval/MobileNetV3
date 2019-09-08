@@ -1,6 +1,6 @@
 import argparse
 
-from .model import MobileNetV3
+from model import MobileNetV3LiteRASPP
 
 def parse_arguments():
     """Parse commandline arguments
@@ -40,7 +40,7 @@ def train():
 
     args = parse_arguments()
 
-    model = MobileNetV3(shape=(-1, 224, 224, 3)).build()
+    model = MobileNetV3LiteRASPP(shape=(448, 448, 3), n_class=4).build()
 
 
 
