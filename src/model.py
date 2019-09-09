@@ -11,13 +11,9 @@ class MobileNetV3LiteRASPP:
         # See https://arxiv.org/pdf/1905.02244v4.pdf p.5 Table 1
         inputs = layers.Input(shape=self.shape)
 
-        print(backend.int_shape(inputs))
-
         x = layers.Conv2D(16, (3, 3), padding="same", strides=(2, 2))(inputs)
         x = layers.BatchNormalization(axis=-1)(x)
         x = self._activation(x, "HS")
-
-        print(backend.int_shape(x))
 
         # Bottleneck blocks
 
@@ -26,8 +22,6 @@ class MobileNetV3LiteRASPP:
             x, 16, (3, 3), expansion=16, strides=1, squeeze=False, at="RE"
         )
 
-        print(backend.int_shape(x))
-
         # 1/4
         x, _, _, _ = self._bneck(
             x, 24, (3, 3), expansion=64, strides=2, squeeze=False, at="RE"
@@ -35,8 +29,6 @@ class MobileNetV3LiteRASPP:
         x, _, _, _ = self._bneck(
             x, 24, (3, 3), expansion=72, strides=1, squeeze=False, at="RE"
         )
-
-        print(backend.int_shape(x))
 
         # 1/8
         x, _, _, _ = self._bneck(
@@ -48,8 +40,6 @@ class MobileNetV3LiteRASPP:
         x_8, _, _, _ = self._bneck(
             x, 40, (5, 5), expansion=120, strides=1, squeeze=True, at="RE"
         )
-
-        print(backend.int_shape(x_8))
 
         # 1/16
         x, _, _, _ = self._bneck(
@@ -70,8 +60,6 @@ class MobileNetV3LiteRASPP:
         x_16, _, _, _ = self._bneck(
             x, 112, (3, 3), expansion=672, strides=1, squeeze=True, at="HS"
         )
-
-        print(backend.int_shape(x_16))
 
         # 1/32
         # 13th bottleneck block (C4) https://arxiv.org/pdf/1905.02244v4.pdf p.7
@@ -139,7 +127,6 @@ class MobileNetV3LiteRASPP:
         x = pro_x
 
         if r:
-            print("Add")
             x = layers.Add()([pro_x, x_copy])
 
         return x, exp_x, dep_x, pro_x

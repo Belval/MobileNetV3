@@ -6,8 +6,9 @@ import time
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 from loss import ce_dice_loss
-from model import MobileNetV3LiteRASPP
 import pandas as pd
+from model import MobileNetV3LiteRASPP
+from data_generators import coco_data_generator
 
 
 def parse_arguments():
@@ -37,7 +38,7 @@ def parse_arguments():
         type=int,
         nargs="?",
         help="Training batch size",
-        default=128,
+        default=8,
     )
     parser.add_argument(
         "-lr",
@@ -46,6 +47,14 @@ def parse_arguments():
         nargs="?",
         help="Learning rate",
         default=0.01,
+    )
+    parser.add_argument(
+        "-cc",
+        "--class-count",
+        type=int,
+        nargs="?",
+        help="Number of classes",
+        default=90, # Number of classes in coco 2017
     )
 
     return parser.parse_args()
@@ -57,7 +66,7 @@ def train():
 
     args = parse_arguments()
 
-    model = MobileNetV3LiteRASPP(shape=(448, 448, 3), n_class=4).build()
+    model = MobileNetV3LiteRASPP(shape=(448, 448, 3), n_class=args.class_count).build()
 
     try:
         os.mkdir(args.save_path)
@@ -71,8 +80,11 @@ def train():
         loss=ce_dice_loss, optimizer=Adam(lr=args.learning_rate), metrics=["accuracy"]
     )
 
-    # FIXME
-    train_generator, val_generator, c1, c2 = None, None, None, None
+    train_generator, c1 = coco_data_generator('../data/coco/train/instances_train2017.json', batch_size=args.batch_size, class_count=args.class_count)
+    val_generator, c2 = coco_data_generator('../data/coco/val/instances_val2017.json', batch_size=args.batch_size, class_count=args.class_count)
+
+    print(c1)
+    print(c2)
 
     hist = model.fit_generator(
         train_generator,
