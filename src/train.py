@@ -38,7 +38,7 @@ def parse_arguments():
         type=int,
         nargs="?",
         help="Training batch size",
-        default=8,
+        default=32,
     )
     parser.add_argument(
         "-lr",
@@ -46,7 +46,7 @@ def parse_arguments():
         type=float,
         nargs="?",
         help="Learning rate",
-        default=0.01,
+        default=0.001,
     )
     parser.add_argument(
         "-cc",
