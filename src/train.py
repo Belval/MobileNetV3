@@ -54,7 +54,7 @@ def parse_arguments():
         type=int,
         nargs="?",
         help="Number of classes",
-        default=90, # Number of classes in coco 2017
+        default=90,  # Number of classes in coco 2017
     )
 
     return parser.parse_args()
@@ -80,8 +80,16 @@ def train():
         loss=ce_dice_loss, optimizer=Adam(lr=args.learning_rate), metrics=["accuracy"]
     )
 
-    train_generator, c1 = coco_data_generator('../data/coco/train/instances_train2017.json', batch_size=args.batch_size, class_count=args.class_count)
-    val_generator, c2 = coco_data_generator('../data/coco/val/instances_val2017.json', batch_size=args.batch_size, class_count=args.class_count)
+    train_generator, c1 = coco_data_generator(
+        "../data/coco/train/instances_train2017.json",
+        batch_size=args.batch_size,
+        class_count=args.class_count,
+    )
+    val_generator, c2 = coco_data_generator(
+        "../data/coco/val/instances_val2017.json",
+        batch_size=args.batch_size,
+        class_count=args.class_count,
+    )
 
     print(c1)
     print(c2)
