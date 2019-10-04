@@ -2,7 +2,8 @@ import argparse
 
 import numpy as np
 from PIL import Image
-
+from model import MobileNetV3LiteRASPP
+from utils import resize_and_crop
 
 def parse_arguments():
     """Parse commandline arguments
@@ -36,20 +37,28 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def eval():
+def evaluate():
     """Runs inference with pretrained model.
     """
 
     args = parse_arguments()
 
+    # Load model
     model = MobileNetV3LiteRASPP(shape=(448, 448, 3), n_class=args.class_count).build()
-
     model.load_weights(args.save_path, by_name=True)
 
-    images = np.array(Image.open(files[image_id]).resize((448, 448)).convert("RGB"))[
-        np.newaxis, :, :, :
-    ]
+    # Load image
+    images = resize_and_crop(Image.open(args.input_image), 448)[np.newaxis, :, :, :]
+
+    # Reference image
+    Image.fromarray(resize_and_crop(Image.open(args.input_image), 56)).save("ref.jpg")
 
     predictions = model.predict(images, batch_size=1)
 
-    print(predictions)
+    predictions *= 255
+
+    for i in range(predictions.shape[-1]):
+        Image.fromarray(predictions[0, :, :, i]).convert('L').save(f"out/{i}.jpg")
+
+if __name__ == "__main__":
+    evaluate()

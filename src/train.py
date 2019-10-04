@@ -30,7 +30,7 @@ def parse_arguments():
         type=int,
         nargs="?",
         help="Training iteration count",
-        default=10000,
+        default=50,
     )
     parser.add_argument(
         "-bs",
@@ -91,9 +91,6 @@ def train():
         class_count=args.class_count,
     )
 
-    print(c1)
-    print(c2)
-
     hist = model.fit_generator(
         train_generator,
         validation_data=val_generator,
@@ -103,9 +100,13 @@ def train():
         callbacks=[early_stop],
     )
 
-    df = pd.DataFrame.from_dict(hist.history)
-    df.to_csv(os.path.join(args.model_path, "hist.csv"), encoding="utf-8", index=False)
-    model.save_weights(os.path.join(args.model_path, f"{int(time.time())}_weights.h5"))
+    try:
+        df = pd.DataFrame.from_dict(hist.history)
+        df.to_csv(os.path.join(args.save_path, "hist.csv"), encoding="utf-8", index=False)
+    except Exception as ex:
+        print(f"Unable to save histogram: {str(ex)}")
+
+    model.save_weights(os.path.join(args.save_path, f"{int(time.time())}_weights.h5"))
 
 
 if __name__ == "__main__":
