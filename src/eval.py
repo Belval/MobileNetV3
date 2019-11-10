@@ -33,6 +33,14 @@ def parse_arguments():
         help="Number of classes",
         default=90,  # Number of classes in coco 2017
     )
+    parser.add_argument(
+        "-th",
+        "--threshold",
+        type=float,
+        nargs="?",
+        help="Threshold to consider a pixel as belonging to a category",
+        default=0.5
+    )
 
     return parser.parse_args()
 
@@ -44,21 +52,30 @@ def evaluate():
     args = parse_arguments()
 
     # Load model
-    model = MobileNetV3LiteRASPP(shape=(448, 448, 3), n_class=args.class_count).build()
+    model = MobileNetV3LiteRASPP(shape=(1024, 1024, 3), n_class=args.class_count).build()
     model.load_weights(args.save_path, by_name=True)
 
     # Load image
-    images = resize_and_crop(Image.open(args.input_image), 448)[np.newaxis, :, :, :]
+    #images = resize_and_crop(Image.open(args.input_image), 1024)[np.newaxis, :, :, :]
+    image = Image.open(args.input_image)
+    image.thumbnail((1024, 1024))
+    image_arr = np.array(image)
+    images = np.zeros((1, 1024, 1024, 3), dtype=np.uint8)
+    images[0, 0:image_arr.shape[0], 0:image_arr.shape[1], :] = image_arr
 
     # Reference image
-    Image.fromarray(resize_and_crop(Image.open(args.input_image), 56)).save("ref.jpg")
+    image.thumbnail((128, 128))
+    image.save("ref.png")
 
     predictions = model.predict(images, batch_size=1)
+
+    predictions[predictions < args.threshold] = 0
+    predictions[predictions > 0] = 1
 
     predictions *= 255
 
     for i in range(predictions.shape[-1]):
-        Image.fromarray(predictions[0, :, :, i]).convert('L').save(f"out/{i}.jpg")
+        Image.fromarray(predictions[0, 0:image.size[1], 0:image.size[0], i]).convert('L').save(f"out/{i}.png")
 
 if __name__ == "__main__":
     evaluate()

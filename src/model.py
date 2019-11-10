@@ -89,12 +89,6 @@ class MobileNetV3LiteRASPP:
 
         return model
 
-    def train():
-        raise NotImplementedError
-
-    def eval():
-        raise NotImplementedError
-
     def _bneck(self, x, filters, kernel, expansion, strides, squeeze, at):
         x_copy = x
 
@@ -143,9 +137,10 @@ class MobileNetV3LiteRASPP:
         x_b1 = self._activation(x_b1, at="RE")
 
         # Second branch
-        x_b2 = layers.AveragePooling2D(pool_size=(25, 25), strides=(8, 10))(x_16)
+        x_b2 = layers.AveragePooling2D(pool_size=(49, 49), strides=(16, 20))(x_16)
         x_b2 = layers.Conv2D(128, (1, 1))(x_b2)
         x_b2 = layers.Activation("sigmoid")(x_b2)
+        print(x_b2.shape)
         x_b2 = layers.UpSampling2D(
             size=(int(s[1]), int(s[2])), interpolation="bilinear"
         )(x_b2)

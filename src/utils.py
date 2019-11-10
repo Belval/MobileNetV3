@@ -11,5 +11,7 @@ def resize_and_crop(img, min_side, rgb=True):
     if rgb:
         img = img.convert("RGB")
         return np.array(img)[0:min_side, 0:min_side, :]
+    else:
+        img = img.convert("L")
 
     return np.array(img)[0:min_side, 0:min_side]

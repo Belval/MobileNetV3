@@ -8,7 +8,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from loss import ce_dice_loss
 import pandas as pd
 from model import MobileNetV3LiteRASPP
-from data_generators import coco_data_generator
+from data_generators import coco_data_generator, mask_data_generator
 
 
 def parse_arguments():
@@ -30,7 +30,7 @@ def parse_arguments():
         type=int,
         nargs="?",
         help="Training iteration count",
-        default=50,
+        default=1,
     )
     parser.add_argument(
         "-bs",
@@ -38,7 +38,7 @@ def parse_arguments():
         type=int,
         nargs="?",
         help="Training batch size",
-        default=32,
+        default=4,
     )
     parser.add_argument(
         "-lr",
@@ -66,7 +66,7 @@ def train():
 
     args = parse_arguments()
 
-    model = MobileNetV3LiteRASPP(shape=(448, 448, 3), n_class=args.class_count).build()
+    model = MobileNetV3LiteRASPP(shape=(1024, 1024, 3), n_class=args.class_count).build()
 
     try:
         os.mkdir(args.save_path)
@@ -80,13 +80,26 @@ def train():
         loss=ce_dice_loss, optimizer=Adam(lr=args.learning_rate), metrics=["accuracy"]
     )
 
-    train_generator, c1 = coco_data_generator(
-        "../data/coco/train/instances_train2017.json",
+    #train_generator, c1 = coco_data_generator(
+    #    "../data/coco/train/instances_train2017.json",
+    #    batch_size=args.batch_size,
+    #    class_count=args.class_count,
+    #)
+    #val_generator, c2 = coco_data_generator(
+    #    "../data/coco/val/instances_val2017.json",
+    #    batch_size=args.batch_size,
+    #    class_count=args.class_count,
+    #)
+
+    train_generator, c1 = mask_data_generator(
+        "../data/isic/train/imgs",
+        "../data/isic/train/masks",
         batch_size=args.batch_size,
         class_count=args.class_count,
     )
-    val_generator, c2 = coco_data_generator(
-        "../data/coco/val/instances_val2017.json",
+    val_generator, c2 = mask_data_generator(
+        "../data/isic/val/imgs",
+        "../data/isic/val/masks",
         batch_size=args.batch_size,
         class_count=args.class_count,
     )
