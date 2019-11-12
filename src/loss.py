@@ -1,12 +1,18 @@
 import tensorflow as tf
-from tensorflow.keras.losses import binary_crossentropy
+from tensorflow.keras import backend as K
 
 
-def ce_dice_loss(y_true, y_pred):
-    def dice_loss(y_true, y_pred):
-        numerator = 2 * tf.reduce_sum(y_true * y_pred, axis=(1, 2, 3))
-        denominator = tf.reduce_sum(y_true + y_pred, axis=(1, 2, 3))
+def dice_coef(y_true, y_pred):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    return (2. * intersection) / (K.sum(y_true_f) + K.sum(y_pred_f))
 
-        return tf.reshape(1 - numerator / denominator, (-1, 1, 1))
+def dice_coef_multilabel_builder(num_labels):
+    def dice_coef_multilabel(y_true, y_pred):
+        dice=0
+        for index in range(num_labels):
+            dice += (1 - dice_coef(y_true[:,:,:,index], y_pred[:,:,:,index])) / num_labels
+        return dice
 
-    return binary_crossentropy(y_true, y_pred) + dice_loss(y_true, y_pred)
+    return dice_coef_multilabel

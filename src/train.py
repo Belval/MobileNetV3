@@ -5,10 +5,14 @@ import time
 
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
-from loss import ce_dice_loss
+from loss import dice_coef_multilabel_builder
 import pandas as pd
 from model import MobileNetV3LiteRASPP
-from data_generators import coco_data_generator, mask_data_generator
+from data_generators import (
+    coco_data_generator,
+    hazmat_data_generator,
+    isic_data_generator
+)
 
 
 def parse_arguments():
@@ -30,7 +34,7 @@ def parse_arguments():
         type=int,
         nargs="?",
         help="Training iteration count",
-        default=1,
+        default=50,
     )
     parser.add_argument(
         "-bs",
@@ -46,7 +50,7 @@ def parse_arguments():
         type=float,
         nargs="?",
         help="Learning rate",
-        default=0.001,
+        default=0.0003,
     )
     parser.add_argument(
         "-cc",
@@ -75,9 +79,11 @@ def train():
             raise
         pass
 
-    early_stop = EarlyStopping(monitor="val_acc", patience=5, mode="auto")
+    early_stop = EarlyStopping(monitor="val_acc", patience=5000, mode="auto")
     model.compile(
-        loss=ce_dice_loss, optimizer=Adam(lr=args.learning_rate), metrics=["accuracy"]
+        loss=dice_coef_multilabel_builder(args.class_count),
+        optimizer=Adam(lr=args.learning_rate),
+        metrics=["accuracy"]
     )
 
     #train_generator, c1 = coco_data_generator(
@@ -91,15 +97,26 @@ def train():
     #    class_count=args.class_count,
     #)
 
-    train_generator, c1 = mask_data_generator(
-        "../data/isic/train/imgs",
-        "../data/isic/train/masks",
+    #train_generator, c1 = mask_data_generator(
+    #    "../data/isic/train/imgs",
+    #    "../data/isic/train/masks",
+    #    batch_size=args.batch_size,
+    #    class_count=args.class_count,
+    #)
+    #val_generator, c2 = mask_data_generator(
+    #    "../data/isic/val/imgs",
+    #    "../data/isic/val/masks",
+    #    batch_size=args.batch_size,
+    #    class_count=args.class_count,
+    #)
+
+    train_generator, c1 = hazmat_data_generator(
+        "../data/hazmat/train/",
         batch_size=args.batch_size,
         class_count=args.class_count,
     )
-    val_generator, c2 = mask_data_generator(
-        "../data/isic/val/imgs",
-        "../data/isic/val/masks",
+    val_generator, c2 = hazmat_data_generator(
+        "../data/hazmat/val/",
         batch_size=args.batch_size,
         class_count=args.class_count,
     )

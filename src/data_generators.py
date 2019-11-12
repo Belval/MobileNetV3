@@ -4,7 +4,10 @@ import random
 import numpy as np
 from PIL import Image
 from pycocotools.coco import COCO
-from utils import resize_and_crop
+from utils import (
+    resize_and_crop,
+    parse_labelme_file
+)
 
 def coco_data_generator(path, batch_size, class_count):
     coco = COCO(path)
@@ -39,7 +42,33 @@ def coco_data_generator(path, batch_size, class_count):
 
     return generator(coco, path, batch_size, class_count), len(coco.imgToAnns)
 
-def mask_data_generator(images_dir, masks_dir, batch_size, class_count):
+
+def hazmat_data_generator(samples_dir, batch_size, class_count):
+    def generator(samples_dir, batch_size, class_count):
+        files = os.listdir(samples_dir)
+        while True:
+            images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+            labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count), dtype=np.uint8)
+            count = 0
+            random.shuffle(files)
+            for f in files:
+                centering = (round(random.random(), 1), round(random.random(), 1))
+                arr, masks = parse_labelme_file(os.path.join(samples_dir, f))
+                images[count, :, :, :] = resize_and_crop(arr, 1024, centering=centering)
+                for l, mask in masks:
+                    labels[count, :, :, l] += resize_and_crop(mask, 1024 // 8, centering=centering, rgb=False)
+                count += 1
+                if count == batch_size:
+                    labels[labels > 0] = 1
+                    yield images, labels
+                    images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+                    labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count), dtype=np.uint8)
+                    count = 0
+    
+    return generator(samples_dir, batch_size, class_count), len(os.listdir(samples_dir))
+
+
+def isic_data_generator(images_dir, masks_dir, batch_size, class_count):
     def generator(images_dir, masks_dir, batch_size, class_count):
         while True:
             images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)

@@ -1,5 +1,6 @@
 import argparse
 
+import cv2
 import numpy as np
 from PIL import Image
 from model import MobileNetV3LiteRASPP
@@ -68,14 +69,12 @@ def evaluate():
     image.save("ref.png")
 
     predictions = model.predict(images, batch_size=1)
-
-    predictions[predictions < args.threshold] = 0
-    predictions[predictions > 0] = 1
-
     predictions *= 255
+    predictions = predictions.astype(np.uint8)
 
     for i in range(predictions.shape[-1]):
-        Image.fromarray(predictions[0, 0:image.size[1], 0:image.size[0], i]).convert('L').save(f"out/{i}.png")
+        ret, th = cv2.threshold(predictions[0, 0:image.size[1], 0:image.size[0], i], 0, 255, cv2.THRESH_OTSU)
+        cv2.imwrite(f"out/{i}.png", th)
 
 if __name__ == "__main__":
     evaluate()
