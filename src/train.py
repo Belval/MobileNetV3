@@ -60,6 +60,14 @@ def parse_arguments():
         help="Number of classes",
         default=90,  # Number of classes in coco 2017
     )
+    parser.add_argument(
+        "-ms",
+        "--model-size",
+        type=str,
+        nargs="?",
+        help="Model size",
+        default="large", 
+    )
 
     return parser.parse_args()
 
@@ -70,7 +78,13 @@ def train():
 
     args = parse_arguments()
 
-    model = MobileNetV3LiteRASPP(shape=(1024, 1024, 3), n_class=args.class_count).build()
+    model = MobileNetV3LiteRASPP(shape=(1024, 1024, 3), n_class=args.class_count)
+
+    if(args.model_size == "large"):
+        model = model.build_large()
+    else:
+        model = model.build_small()
+
 
     try:
         os.mkdir(args.save_path)
@@ -97,29 +111,30 @@ def train():
     #    class_count=args.class_count,
     #)
 
-    #train_generator, c1 = mask_data_generator(
-    #    "../data/isic/train/imgs",
-    #    "../data/isic/train/masks",
-    #    batch_size=args.batch_size,
-    #    class_count=args.class_count,
-    #)
-    #val_generator, c2 = mask_data_generator(
-    #    "../data/isic/val/imgs",
-    #    "../data/isic/val/masks",
-    #    batch_size=args.batch_size,
-    #    class_count=args.class_count,
-    #)
+    train_generator, c1 = isic_data_generator(
+       "../data/isic/train/imgs",
+       "../data/isic/train/masks",
+       batch_size=args.batch_size,
+       class_count=args.class_count,
+    )
+    val_generator, c2 = isic_data_generator(
+       "../data/isic/val/imgs",
+       "../data/isic/val/masks",
+       batch_size=args.batch_size,
+       class_count=args.class_count,
+    )
 
-    train_generator, c1 = hazmat_data_generator(
-        "../data/hazmat/train/",
-        batch_size=args.batch_size,
-        class_count=args.class_count,
-    )
-    val_generator, c2 = hazmat_data_generator(
-        "../data/hazmat/val/",
-        batch_size=args.batch_size,
-        class_count=args.class_count,
-    )
+    # train_generator, c1 = hazmat_data_generator(
+    #     "../data/hazmat/train/",
+    #     batch_size=args.batch_size,
+    #     class_count=args.class_count,
+    # )
+    # val_generator, c2 = hazmat_data_generator(
+    #     "../data/hazmat/val/",
+    #     batch_size=args.batch_size,
+    #     class_count=args.class_count,
+    # )
+    
 
     hist = model.fit_generator(
         train_generator,

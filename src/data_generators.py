@@ -2,6 +2,7 @@ import os
 import random
 
 import numpy as np
+from pathlib import Path
 from PIL import Image
 from pycocotools.coco import COCO
 from utils import (
@@ -72,32 +73,31 @@ def isic_data_generator(images_dir, masks_dir, batch_size, class_count):
     def generator(images_dir, masks_dir, batch_size, class_count):
         while True:
             images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
-            labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count), dtype=np.uint8)
+            labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count), dtype=np.uint8)
             count = 0
             for image_filename in os.listdir(images_dir):
                 if image_filename[-3:] not in ('jpg', 'png'):
                     continue
-                p = os.path.join(images_dir, image_filename)
+                p = os.path.join(os.getcwd(), images_dir, image_filename)
                 image = Image.open(p)
                 images[count, :, :, :] = resize_and_crop(image, 1024)
                 mask = Image.open(os.path.join(
                     masks_dir,
                     f"{image_filename[:-4]}_segmentation.png")
                 )
-                labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 8, rgb=False)
+                labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 16, rgb=False)
                 labels[count, labels[count, :, :, :] > 0] = 1
                 count += 1
                 if count == batch_size:
                     yield images, labels
                     images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
-                    labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count))
+                    labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count))
                     count = 0
-    
     return generator(images_dir, masks_dir, batch_size, class_count), len(os.listdir(images_dir))
 
 
 if __name__ == '__main__':
-    train_generator, c1 = mask_data_generator(
+    train_generator, c1 = isic_data_generator(
         "../data/isic/imgs",
         "../data/isic/masks",
         batch_size=32,

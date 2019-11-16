@@ -7,7 +7,7 @@ class MobileNetV3LiteRASPP:
         self.shape = shape
         self.n_class = n_class
 
-    def build(self):
+    def build_large(self):
         # See https://arxiv.org/pdf/1905.02244v4.pdf p.5 Table 1
         inputs = layers.Input(shape=self.shape)
 
@@ -63,7 +63,7 @@ class MobileNetV3LiteRASPP:
 
         # 1/32
         # 13th bottleneck block (C4) https://arxiv.org/pdf/1905.02244v4.pdf p.7
-        # x, _, _, _ = self._bneck(x_18, 160, (5, 5), expansion=672, strides=2, squeeze=True, at="HS")
+        # x, _, _, _ = self._bneck(x_18, 16shape0, (5, 5), expansion=672, strides=2, squeeze=True, at="HS")
         # x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
         # x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
         #
@@ -88,6 +88,63 @@ class MobileNetV3LiteRASPP:
         model = models.Model(inputs, x)
 
         return model
+
+
+    def build_small(self):
+        inputs = layers.Input(shape=self.shape)
+
+        x = layers.Conv2D(16, (3, 3), padding="same", strides=(2, 2))(inputs)
+        x = layers.BatchNormalization(axis=-1)(x)
+        x = self._activation(x, "HS")
+
+        # Bottleneck blocks
+        
+        # 1/2
+        x, _, _, _ = self._bneck(
+            x, 16, (3, 3), expansion=16, strides=2, squeeze=True, at="RE"
+        )
+
+        # 1/4
+        x, _, _, _ = self._bneck(
+            x, 24, (3, 3), expansion=72, strides=2, squeeze=False, at="RE"
+        )
+
+        # 1/8
+        x, _, _, _ = self._bneck(
+            x, 24, (3, 3), expansion=88, strides=1, squeeze=False, at="RE"
+        )
+
+        x_8, _, _, _ = self._bneck(
+            x, 40, (5, 5), expansion=96, strides=2, squeeze=True, at="HS"
+        )
+
+        # 1/16
+        x, _, _, _ = self._bneck(
+            x_8, 40, (5, 5), expansion=240, strides=1, squeeze=True, at="HS"
+        )
+
+        x, _, _, _ = self._bneck(
+            x, 40, (5, 5), expansion=240, strides=1, squeeze=True, at="HS"
+        )
+
+        x, _, _, _ = self._bneck(
+            x, 48, (5, 5), expansion=120, strides=1, squeeze=True, at="HS"
+        )
+
+        x, _, _, _ = self._bneck(
+            x, 48, (5, 5), expansion=144, strides=1, squeeze=True, at="HS"
+        )
+
+        x_16, _, _, _ = self._bneck(
+            x, 96, (5, 5), expansion=288, strides=2, squeeze=True, at="HS"
+        )
+
+        x = self._segmentation_head(x_16, x_8)
+
+        model = models.Model(inputs, x)
+
+        return model
+
 
     def _bneck(self, x, filters, kernel, expansion, strides, squeeze, at):
         x_copy = x
@@ -126,23 +183,21 @@ class MobileNetV3LiteRASPP:
         return x, exp_x, dep_x, pro_x
 
     def _segmentation_head(self, x_16, x_8):
-        x_copy = x_16
         # First branch
         x_b1 = layers.Conv2D(128, (1, 1), strides=(1, 1), padding="same")(x_16)
 
         # This is the size we want for the other branch
-        s = x_b1.shape
+        sh = x_b1.shape
 
         x_b1 = layers.BatchNormalization(axis=-1)(x_b1)
         x_b1 = self._activation(x_b1, at="RE")
 
         # Second branch
-        x_b2 = layers.AveragePooling2D(pool_size=(49, 49), strides=(16, 20))(x_16)
+        x_b2 = layers.AveragePooling2D(pool_size=(25, 25), strides=(16, 20))(x_16)
         x_b2 = layers.Conv2D(128, (1, 1))(x_b2)
         x_b2 = layers.Activation("sigmoid")(x_b2)
-        print(x_b2.shape)
         x_b2 = layers.UpSampling2D(
-            size=(int(s[1]), int(s[2])), interpolation="bilinear"
+            size=(int(sh[1]), int(sh[2])), interpolation="bilinear"
         )(x_b2)
 
         # Merging branches 1 and 2
