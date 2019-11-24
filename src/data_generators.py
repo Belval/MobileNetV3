@@ -1,3 +1,4 @@
+import csv
 import os
 import random
 
@@ -68,23 +69,24 @@ def hazmat_data_generator(samples_dir, batch_size, class_count):
     return generator(samples_dir, batch_size, class_count), len(os.listdir(samples_dir))
 
 
-def isic_data_generator(images_dir, masks_dir, batch_size, class_count):
-    def generator(images_dir, masks_dir, batch_size, class_count):
+def isic_segmentation_data_generator(images_dir, masks_dir, labels_file, batch_size, class_count):
+    def generator(images_dir, masks_dir, labels_file, batch_size, class_count):
         while True:
             images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
             labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count), dtype=np.uint8)
             count = 0
             for image_filename in os.listdir(images_dir):
+                centering = (round(random.random(), 1), round(random.random(), 1))
                 if image_filename[-3:] not in ('jpg', 'png'):
                     continue
                 p = os.path.join(images_dir, image_filename)
                 image = Image.open(p)
-                images[count, :, :, :] = resize_and_crop(image, 1024)
+                images[count, :, :, :] = resize_and_crop(image, 1024, centering=centering)
                 mask = Image.open(os.path.join(
                     masks_dir,
                     f"{image_filename[:-4]}_segmentation.png")
                 )
-                labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 8, rgb=False)
+                labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 8, centering=centering, rgb=False)
                 labels[count, labels[count, :, :, :] > 0] = 1
                 count += 1
                 if count == batch_size:
@@ -95,6 +97,37 @@ def isic_data_generator(images_dir, masks_dir, batch_size, class_count):
     
     return generator(images_dir, masks_dir, batch_size, class_count), len(os.listdir(images_dir))
 
+def isic_classification_data_generator(images_dir, labels_file, batch_size, class_count):
+    label_dict = {}
+    with open(labels_file, "r") as f:
+        csvfile = csv.reader(f)
+        # Skip column description
+        next(csvfile)
+        for row in csvfile:
+            print(row)
+            label_dict[row[0]] = row[1:].index("1.0")
+
+    def generator(images_dir, labels_file, batch_size, class_count):
+        while True:
+            images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+            labels = np.zeros((batch_size, class_count), dtype=np.uint8)
+            count = 0
+            for image_filename in os.listdir(images_dir):
+                centering = (round(random.random(), 1), round(random.random(), 1))
+                if image_filename[-3:] not in ('jpg', 'png'):
+                    continue
+                p = os.path.join(images_dir, image_filename)
+                image = Image.open(p)
+                images[count, :, :, :] = resize_and_crop(image, 1024, centering=centering)
+                labels[count, label_dict[image_filename[:-4]]] = 1
+                count += 1
+                if count == batch_size:
+                    yield images, labels
+                    images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+                    labels = np.zeros((batch_size, class_count))
+                    count = 0
+    
+    return generator(images_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir))
 
 if __name__ == '__main__':
     train_generator, c1 = mask_data_generator(
