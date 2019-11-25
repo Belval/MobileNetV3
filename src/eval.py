@@ -69,8 +69,12 @@ def evaluate():
     image.save("ref.png")
 
     predictions = model.predict(images, batch_size=1)
+
+    print(predictions)
+
     predictions *= 255
     predictions = predictions.astype(np.uint8)
+
 
     for i in range(predictions.shape[-1]):
         ret, th = cv2.threshold(predictions[0, 0:image.size[1], 0:image.size[0], i], 0, 255, cv2.THRESH_OTSU)

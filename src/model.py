@@ -3,9 +3,10 @@ from tensorflow.keras import backend, layers, models
 
 
 class MobileNetV3LiteRASPP:
-    def __init__(self, shape, n_class):
+    def __init__(self, shape, n_class, task):
         self.shape = shape
         self.n_class = n_class
+        self.task = task
 
     def build_large(self):
         # See https://arxiv.org/pdf/1905.02244v4.pdf p.5 Table 1
@@ -61,29 +62,10 @@ class MobileNetV3LiteRASPP:
             x, 112, (3, 3), expansion=672, strides=1, squeeze=True, at="HS"
         )
 
-        # 1/32
-        # 13th bottleneck block (C4) https://arxiv.org/pdf/1905.02244v4.pdf p.7
-        # x, _, _, _ = self._bneck(x_18, 16shape0, (5, 5), expansion=672, strides=2, squeeze=True, at="HS")
-        # x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
-        # x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
-        #
-        # print(backend.int_shape(x))
-
-        # Layer immediatly before pooling (C5) https://arxiv.org/pdf/1905.02244v4.pdf p.7
-        # x = layers.Conv2D(960, (1, 1), strides=(1, 1), padding="same")(x)
-        # x = layers.BatchNormalization(axis=-1)(x)
-        # x = self._activation(x, at="HS")
-
-        # print(backend.int_shape(x))
-
-        ## Pooling layer
-        # x = layers.GlobalAveragePooling2D()(x)
-        # x = layers.Reshape((1, 1, 960))(x)
-        #
-        # x = layers.Conv2D(1280, (1, 1), padding="same")(x)
-        # x = self._activation(x, "HS")
-        #
-        x = self._segmentation_head(x_16, x_8)
+        if self.task == "segmentation":
+            x = self._segmentation_head(x_16, x_8)
+        else:
+            x = self._classification_head(x_16)
 
         model = models.Model(inputs, x)
 
@@ -182,7 +164,34 @@ class MobileNetV3LiteRASPP:
 
         return x, exp_x, dep_x, pro_x
 
+    def _classification_head(self, x_8):
+        # 1/32
+        # 13th bottleneck block (C4) https://arxiv.org/pdf/1905.02244v4.pdf p.7
+        x, _, _, _ = self._bneck(x_8, 160, (5, 5), expansion=672, strides=2, squeeze=True, at="HS")
+        x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
+        x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
+        
+        # Layer immediatly before pooling (C5) https://arxiv.org/pdf/1905.02244v4.pdf p.7
+        x = layers.Conv2D(960, (1, 1), strides=(1, 1), padding="same")(x)
+        x = layers.BatchNormalization(axis=-1)(x)
+        x = self._activation(x, at="HS")
+
+        # Pooling layer
+        x = layers.GlobalAveragePooling2D()(x)
+        x = layers.Reshape((1, 1, 960))(x)
+        
+        x = layers.Conv2D(1280, (1, 1), padding="same")(x)
+        x = self._activation(x, "HS")
+
+        # Final layer
+        #x = layers.Conv2D(1000, (1, 1), strides=(1, 1), padding="same")(x)
+        x = layers.Reshape((1280,))(x)
+        x = layers.Dense(self.n_class, activation="softmax")(x)
+
+        return x
+
     def _segmentation_head(self, x_16, x_8, size='large'):
+        x_copy = x_16
         # First branch
         x_b1 = layers.Conv2D(128, (1, 1), strides=(1, 1), padding="same")(x_16)
 
