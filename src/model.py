@@ -139,7 +139,7 @@ class MobileNetV3LiteRASPP:
             x, 96, (5, 5), expansion=288, strides=2, squeeze=True, at="HS"
         )
 
-        x = self._segmentation_head(x_16, x_8)
+        x = self._segmentation_head(x_16, x_8, size='small')
 
         model = models.Model(inputs, x)
 
@@ -182,7 +182,7 @@ class MobileNetV3LiteRASPP:
 
         return x, exp_x, dep_x, pro_x
 
-    def _segmentation_head(self, x_16, x_8):
+    def _segmentation_head(self, x_16, x_8, size='large'):
         # First branch
         x_b1 = layers.Conv2D(128, (1, 1), strides=(1, 1), padding="same")(x_16)
 
@@ -193,7 +193,11 @@ class MobileNetV3LiteRASPP:
         x_b1 = self._activation(x_b1, at="RE")
 
         # Second branch
-        x_b2 = layers.AveragePooling2D(pool_size=(25, 25), strides=(16, 20))(x_16)
+        if(size == 'large'):
+            x_b2 = layers.AveragePooling2D(pool_size=(49, 49), strides=(16, 20))(x_16)
+        else :
+            x_b2 = layers.AveragePooling2D(pool_size=(25, 25), strides=(16, 20))(x_16)
+
         x_b2 = layers.Conv2D(128, (1, 1))(x_b2)
         x_b2 = layers.Activation("sigmoid")(x_b2)
         x_b2 = layers.UpSampling2D(
