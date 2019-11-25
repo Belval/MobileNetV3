@@ -70,8 +70,8 @@ def hazmat_data_generator(samples_dir, batch_size, class_count):
     return generator(samples_dir, batch_size, class_count), len(os.listdir(samples_dir))
 
 
-def isic_segmentation_data_generator(images_dir, masks_dir, labels_file, batch_size, class_count, model_size='large'):
-    def generator(images_dir, masks_dir, labels_file, batch_size, class_count):
+def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_count, model_size='large'):
+    def generator(images_dir, masks_dir, batch_size, class_count):
         while True:
             images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
             labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count), dtype=np.uint8)
@@ -92,7 +92,7 @@ def isic_segmentation_data_generator(images_dir, masks_dir, labels_file, batch_s
                     labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 8, centering=centering, rgb=False)
                 else:
                     labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 16, centering=centering, rgb=False)
-                    
+
                 labels[count, labels[count, :, :, :] > 0] = 1
                 count += 1
                 if count == batch_size:

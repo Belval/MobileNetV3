@@ -121,31 +121,33 @@ def train():
     #    class_count=args.class_count,
     #)
 
-    train_generator, c1 = isic_data_generator(
+    train_generator, c1 = isic_segmentation_data_generator(
        "../data/isic/train/imgs",
        "../data/isic/train/masks",
        batch_size=args.batch_size,
        class_count=args.class_count,
+       model_size=args.model_size,
     )
-    val_generator, c2 = isic_data_generator(
+    val_generator, c2 = isic_segmentation_data_generator(
        "../data/isic/val/imgs",
        "../data/isic/val/masks",
        batch_size=args.batch_size,
        class_count=args.class_count,
+       model_size=args.model_size,
     )
 
-    train_generator, c1 = isic_classification_data_generator(
-        "../data/isic_classification/train/",
-        "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
-        batch_size=args.batch_size,
-        class_count=args.class_count,
-    )
-    val_generator, c2 = isic_classification_data_generator(
-        "../data/isic_classification/val/",
-        "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
-        batch_size=args.batch_size,
-        class_count=args.class_count,
-    )
+    # train_generator, c1 = isic_classification_data_generator(
+    #     "../data/isic_classification/train/",
+    #     "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
+    #     batch_size=args.batch_size,
+    #     class_count=args.class_count,
+    # )
+    # val_generator, c2 = isic_classification_data_generator(
+    #     "../data/isic_classification/val/",
+    #     "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
+    #     batch_size=args.batch_size,
+    #     class_count=args.class_count,
+    # )
 
     #train_generator, c1 = hazmat_data_generator(
     #    "../data/hazmat/train/",
