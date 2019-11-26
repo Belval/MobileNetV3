@@ -15,6 +15,7 @@ from data_generators import (
     #hltid_data_generator,
     isic_segmentation_data_generator,
     isic_classification_data_generator,
+    isic_classification_augmented_data_generator,
 )
 
 
@@ -119,9 +120,22 @@ def train():
     #    class_count=args.class_count,
     #)
 
-    train_generator, c1 = isic_classification_data_generator(
-        "../data/isic_classification/train/",
-        "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
+    #train_generator, c1 = isic_classification_data_generator(
+    #    "../data/isic_classification/train/",
+    #    "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
+    #    batch_size=args.batch_size,
+    #    class_count=args.class_count,
+    #)
+    #val_generator, c2 = isic_classification_data_generator(
+    #    "../data/isic_classification/val/",
+    #    "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
+    #    batch_size=args.batch_size,
+    #    class_count=args.class_count,
+    #)
+
+    train_generator, c1 = isic_classification_augmented_data_generator(
+        "../data/isic_classification/train_aug/",
+        "../data/isic_classification/label_dict.pkl",
         batch_size=args.batch_size,
         class_count=args.class_count,
     )
