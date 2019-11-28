@@ -1,6 +1,7 @@
 import csv
 import os
 import random
+import pickle
 
 import numpy as np
 from pathlib import Path
@@ -125,6 +126,31 @@ def isic_classification_data_generator(images_dir, labels_file, batch_size, clas
                 image = Image.open(p)
                 images[count, :, :, :] = resize_and_crop(image, 1024, centering=centering)
                 labels[count, label_dict[image_filename[:-4]]] = 1
+                count += 1
+                if count == batch_size:
+                    yield images, labels
+                    images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+                    labels = np.zeros((batch_size, class_count))
+                    count = 0
+    
+    return generator(images_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir))
+
+def isic_classification_augmented_data_generator(images_dir, labels_file, batch_size, class_count):
+    label_dict = pickle.load(open(labels_file, "rb"))
+
+    def generator(images_dir, labels_file, batch_size, class_count):
+        while True:
+            images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+            labels = np.zeros((batch_size, class_count), dtype=np.uint8)
+            count = 0
+            for image_filename in os.listdir(images_dir):
+                centering = (round(random.random(), 1), round(random.random(), 1))
+                if image_filename[-3:] not in ('jpg', 'png'):
+                    continue
+                p = os.path.join(images_dir, image_filename)
+                image = Image.open(p)
+                images[count, :, :, :] = resize_and_crop(image, 1024, centering=centering)
+                labels[count, label_dict[image_filename]] = 1
                 count += 1
                 if count == batch_size:
                     yield images, labels
