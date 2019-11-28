@@ -79,7 +79,7 @@ def parse_arguments():
         type=str,
         nargs="?",
         help="Task",
-        default="detection", 
+        default="classification", 
     )
 
     return parser.parse_args()
@@ -136,7 +136,7 @@ def train():
         class_count=args.class_count,
         model_size=args.model_size,
         )
-    elif args.task == 'detection':
+    elif args.task == 'classification':
         train_generator, c1 = isic_classification_augmented_data_generator(
             "../data/isic_classification/train_aug/",
             "../data/isic_classification/label_dict.pkl",
