@@ -2,9 +2,10 @@ import argparse
 import errno
 import os
 import time
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from loss import dice_coef_multilabel_builder
 import pandas as pd
@@ -171,13 +172,15 @@ def train():
     #    class_count=args.class_count,
     #)
 
+    mcp_save = ModelCheckpoint('./out/best_wts.h5', verbose=1, save_best_only=True, save_weights_only=True, monitor='val_acc', mode='max')
+
     hist = model.fit_generator(
         train_generator,
         validation_data=val_generator,
         steps_per_epoch=c1 // args.batch_size,
         validation_steps=c2 // args.batch_size,
         epochs=args.iteration_count,
-        callbacks=[early_stop],
+        callbacks=[early_stop, mcp_save],
     )
 
     try:
