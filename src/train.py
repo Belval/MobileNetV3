@@ -4,6 +4,7 @@ import os
 import time
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from tensorflow import keras
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -113,42 +114,45 @@ def train():
 
     early_stop = EarlyStopping(monitor="val_acc", patience=5, mode="auto")
 
-    model.compile(
-        loss=dice_coef_multilabel_builder(args.class_count),
-        #loss=categorical_crossentropy,
-        optimizer=RMSprop(lr=args.learning_rate, momentum=0.9),
-        metrics=["accuracy"]
-    )
-
     if args.task == 'segmentation':
         train_generator, c1 = isic_segmentation_data_generator(
-        "../data/isic/train/imgs",
-        "../data/isic/train/masks",
-        batch_size=args.batch_size,
-        class_count=args.class_count,
-        model_size=args.model_size,
-        )
-        
+            "../data/isic/train/imgs",
+            "../data/isic/train/masks",
+            batch_size=args.batch_size,
+            class_count=args.class_count,
+            model_size=args.model_size,
+        )        
         val_generator, c2 = isic_segmentation_data_generator(
-        "../data/isic/val/imgs",
-        "../data/isic/val/masks",
-        batch_size=args.batch_size,
-        class_count=args.class_count,
-        model_size=args.model_size,
+            "../data/isic/val/imgs",
+            "../data/isic/val/masks",
+            batch_size=args.batch_size,
+            class_count=args.class_count,
+            model_size=args.model_size,
+        )
+        model.compile(
+            loss=dice_coef_multilabel_builder(args.class_count),
+            optimizer=RMSprop(lr=args.learning_rate, momentum=0.9),
+            metrics=["accuracy"],
         )
     elif args.task == 'classification':
-        train_generator, c1 = isic_classification_augmented_data_generator(
+        train_generator, c1, _ = isic_classification_augmented_data_generator(
             "../data/isic_classification/train_aug/",
             "../data/isic_classification/label_dict.pkl",
             batch_size=args.batch_size,
             class_count=args.class_count,
         )
-
-        val_generator, c2 = isic_classification_data_generator(
+        val_generator, c2, weights = isic_classification_data_generator(
            "../data/isic_classification/val/",
            "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
            batch_size=args.batch_size,
            class_count=args.class_count,
+        )
+        print(weights)
+        model.compile(
+            loss=categorical_crossentropy,
+            optimizer=Adam(lr=args.learning_rate),
+            metrics=["accuracy"],
+            weighted_metrics=['accuracy']
         )
     else:
         raise Exception(f'Task "{args.task}" is not implemented')
@@ -187,6 +191,7 @@ def train():
     #)
 
     mcp_save = ModelCheckpoint('./out/best_wts.h5', verbose=1, save_best_only=True, save_weights_only=True, monitor='val_acc', mode='max')
+    tensorboard_callback = keras.callbacks.TensorBoard(f'./logs/', update_freq='epoch')
 
     hist = model.fit_generator(
         train_generator,
@@ -194,7 +199,8 @@ def train():
         steps_per_epoch=c1 // args.batch_size,
         validation_steps=c2 // args.batch_size,
         epochs=args.iteration_count,
-        callbacks=[early_stop, mcp_save],
+        callbacks=[early_stop, mcp_save, tensorboard_callback],
+        class_weight=weights
     )
 
     try:

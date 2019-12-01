@@ -2,6 +2,7 @@ import csv
 import os
 import random
 import pickle
+from collections import Counter
 
 import numpy as np
 from pathlib import Path
@@ -123,6 +124,11 @@ def isic_classification_data_generator(images_dir, labels_file, batch_size, clas
             print(row)
             label_dict[row[0]] = row[1:].index("1.0")
 
+    counter = {i:0 for i in range(class_count)}
+    for image_filename in os.listdir(images_dir):
+        counter[label_dict[image_filename[:-4]]] += 1
+    weights = {i:int(max(counter.values())/counter[i]) for i in range(class_count)}
+
     def generator(images_dir, labels_file, batch_size, class_count):
         while True:
             images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
@@ -143,10 +149,15 @@ def isic_classification_data_generator(images_dir, labels_file, batch_size, clas
                     labels = np.zeros((batch_size, class_count))
                     count = 0
     
-    return generator(images_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir))
+    return generator(images_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir)), weights
 
 def isic_classification_augmented_data_generator(images_dir, labels_file, batch_size, class_count):
     label_dict = pickle.load(open(labels_file, "rb"))
+
+    counter = {i:1 for i in range(class_count)}
+    for image_filename in os.listdir(images_dir):
+        counter[label_dict[image_filename]] += 1
+    weights = {i:int(max(counter.values())/counter[i]) for i in range(class_count)}
 
     def generator(images_dir, labels_file, batch_size, class_count):
         while True:
@@ -168,7 +179,7 @@ def isic_classification_augmented_data_generator(images_dir, labels_file, batch_
                     labels = np.zeros((batch_size, class_count))
                     count = 0
     
-    return generator(images_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir))
+    return generator(images_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir)), weights
 
 if __name__ == '__main__':
     train_generator, c1 = isic_data_generator(
