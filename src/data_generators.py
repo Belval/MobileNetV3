@@ -75,7 +75,12 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
     def generator(images_dir, masks_dir, batch_size, class_count):
         while True:
             images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
-            labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count), dtype=np.uint8)
+
+            if model_size == 'large':
+                labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count), dtype=np.uint8)
+            else:
+                labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count), dtype=np.uint8)
+
             count = 0
             for image_filename in os.listdir(images_dir):
                 centering = (round(random.random(), 1), round(random.random(), 1))
@@ -99,7 +104,12 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
                 if count == batch_size:
                     yield images, labels
                     images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
-                    labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count))
+
+                    if model_size == 'large':
+                        labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count))
+                    else:
+                        labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count))
+
                     count = 0
     return generator(images_dir, masks_dir, batch_size, class_count), len(os.listdir(images_dir))
 

@@ -94,7 +94,7 @@ def train():
     model = MobileNetV3LiteRASPP(
         shape=(1024, 1024, 3),
         n_class=args.class_count,
-        task="classification",
+        task=args.task,
     )
 
     if(args.model_size == "large"):
@@ -114,9 +114,9 @@ def train():
     early_stop = EarlyStopping(monitor="val_acc", patience=5, mode="auto")
 
     model.compile(
-        #loss=dice_coef_multilabel_builder(args.class_count),
-        loss=categorical_crossentropy,
-        optimizer=Adam(lr=args.learning_rate),
+        loss=dice_coef_multilabel_builder(args.class_count),
+        #loss=categorical_crossentropy,
+        optimizer=RMSprop(lr=args.learning_rate, momentum=0.9),
         metrics=["accuracy"]
     )
 

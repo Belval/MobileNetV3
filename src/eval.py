@@ -13,6 +13,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Train the MobileNetV3 model")
 
     parser.add_argument(
+        "-s",
         "--save-path",
         type=str,
         nargs="?",
@@ -42,6 +43,22 @@ def parse_arguments():
         help="Threshold to consider a pixel as belonging to a category",
         default=0.5
     )
+    parser.add_argument(
+        "-ms",
+        "--model-size",
+        type=str,
+        nargs="?",
+        help="Model size",
+        default="large", 
+    )
+    parser.add_argument(
+        "-t",
+        "--task",
+        type=str,
+        nargs="?",
+        help="Task",
+        default="classification", 
+    )
 
     return parser.parse_args()
 
@@ -53,7 +70,13 @@ def evaluate():
     args = parse_arguments()
 
     # Load model
-    model = MobileNetV3LiteRASPP(shape=(1024, 1024, 3), n_class=args.class_count).build()
+    model = MobileNetV3LiteRASPP(shape=(1024, 1024, 3), n_class=args.class_count, task=args.task)
+
+    if(args.model_size == "large"):
+        model = model.build_large()
+    else:
+        model = model.build_small()
+
     model.load_weights(args.save_path, by_name=True)
 
     # Load image
