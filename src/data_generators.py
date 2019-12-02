@@ -90,6 +90,7 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
                 p = os.path.join(os.getcwd(), images_dir, image_filename)
                 image = Image.open(p)
                 images[count, :, :, :] = resize_and_crop(image, 1024, centering=centering)
+
                 mask = Image.open(os.path.join(
                     masks_dir,
                     f"{image_filename[:-4]}_segmentation.png")

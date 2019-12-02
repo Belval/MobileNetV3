@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.keras import backend, layers, models
 
 
+
 class MobileNetV3LiteRASPP:
     def __init__(self, shape, n_class, task):
         self.shape = shape
@@ -120,7 +121,7 @@ class MobileNetV3LiteRASPP:
         x_16, _, _, _ = self._bneck(
             x, 96, (5, 5), expansion=288, strides=2, squeeze=True, at="HS"
         )
-
+        
         x = self._segmentation_head(x_16, x_8, size='small')
 
         model = models.Model(inputs, x)
