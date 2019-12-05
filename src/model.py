@@ -80,7 +80,7 @@ class MobileNetV3LiteRASPP:
         x = self._activation(x, "HS")
 
         # Bottleneck blocks
-        
+
         # 1/2
         x, _, _, _ = self._bneck(
             x, 16, (3, 3), expansion=16, strides=2, squeeze=True, at="RE"
@@ -121,7 +121,10 @@ class MobileNetV3LiteRASPP:
             x, 96, (5, 5), expansion=288, strides=2, squeeze=True, at="HS"
         )
 
-        x = self._segmentation_head(x_16, x_8, size='small')
+        if self.task == "segmentation":
+            x = self._segmentation_head(x_16, x_8, size="small")
+        else:
+            x = self._classification_head(x_16)
 
         model = models.Model(inputs, x)
 
@@ -170,7 +173,7 @@ class MobileNetV3LiteRASPP:
         x, _, _, _ = self._bneck(x_8, 160, (5, 5), expansion=672, strides=2, squeeze=True, at="HS")
         x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
         x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
-        
+
         # Layer immediatly before pooling (C5) https://arxiv.org/pdf/1905.02244v4.pdf p.7
         x = layers.Conv2D(960, (1, 1), strides=(1, 1), padding="same")(x)
         x = layers.BatchNormalization(axis=-1)(x)
@@ -179,7 +182,7 @@ class MobileNetV3LiteRASPP:
         # Pooling layer
         x = layers.GlobalAveragePooling2D()(x)
         x = layers.Reshape((1, 1, 960))(x)
-        
+
         x = layers.Conv2D(1280, (1, 1), padding="same")(x)
         x = self._activation(x, "HS")
 

@@ -131,7 +131,7 @@ def isic_classification_data_generator(images_dir, labels_file, batch_size, clas
 
     def generator(images_dir, labels_file, batch_size, class_count):
         while True:
-            images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
             labels = np.zeros((batch_size, class_count), dtype=np.uint8)
             count = 0
             for image_filename in os.listdir(images_dir):
@@ -140,12 +140,12 @@ def isic_classification_data_generator(images_dir, labels_file, batch_size, clas
                     continue
                 p = os.path.join(images_dir, image_filename)
                 image = Image.open(p)
-                images[count, :, :, :] = resize_and_crop(image, 1024, centering=centering)
+                images[count, :, :, :] = resize_and_crop(image, 512, centering=centering)
                 labels[count, label_dict[image_filename[:-4]]] = 1
                 count += 1
                 if count == batch_size:
                     yield images, labels
-                    images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+                    images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
                     labels = np.zeros((batch_size, class_count))
                     count = 0
     
@@ -161,7 +161,7 @@ def isic_classification_augmented_data_generator(images_dir, labels_file, batch_
 
     def generator(images_dir, labels_file, batch_size, class_count):
         while True:
-            images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
             labels = np.zeros((batch_size, class_count), dtype=np.uint8)
             count = 0
             for image_filename in os.listdir(images_dir):
@@ -170,12 +170,12 @@ def isic_classification_augmented_data_generator(images_dir, labels_file, batch_
                     continue
                 p = os.path.join(images_dir, image_filename)
                 image = Image.open(p)
-                images[count, :, :, :] = resize_and_crop(image, 1024, centering=centering)
+                images[count, :, :, :] = resize_and_crop(image, 512, centering=centering)
                 labels[count, label_dict[image_filename]] = 1
                 count += 1
                 if count == batch_size:
                     yield images, labels
-                    images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+                    images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
                     labels = np.zeros((batch_size, class_count))
                     count = 0
     
