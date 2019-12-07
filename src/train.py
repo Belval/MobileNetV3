@@ -42,7 +42,7 @@ def parse_arguments():
         type=int,
         nargs="?",
         help="Training iteration count",
-        default=50,
+        default=100,
     )
     parser.add_argument(
         "-bs",
@@ -100,7 +100,7 @@ def train():
     args = parse_arguments()
 
     model = MobileNetV3LiteRASPP(
-        shape=(1024, 1024, 3),
+        shape=(512, 512, 3),
         n_class=args.class_count,
         task=args.task,
     )
@@ -119,7 +119,7 @@ def train():
             raise
         pass
 
-    early_stop = EarlyStopping(monitor="val_acc", patience=500, mode="auto")
+    early_stop = EarlyStopping(monitor="val_acc", patience=15, mode="auto")
 
     if args.task == 'segmentation':
         train_generator, c1 = isic_segmentation_data_generator(
