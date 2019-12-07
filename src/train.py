@@ -10,7 +10,6 @@ from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras import backend as K
 from loss import dice_coef_multilabel_builder
-from sklearn.metrics import jaccard_score
 import pandas as pd
 from model import MobileNetV3LiteRASPP
 from data_generators import (
@@ -133,6 +132,7 @@ def train():
             "../data/isic/val/masks",
             batch_size=args.batch_size,
             class_count=args.class_count,
+            picture_size=512,
             model_size=args.model_size,
         )
         model.compile(
