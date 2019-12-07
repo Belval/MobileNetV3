@@ -196,6 +196,8 @@ class MobileNetV3LiteRASPP:
 
     def _segmentation_head(self, x_16, x_8, size='large'):
         x_copy = x_16
+        input_size = x_16.shape
+
         # First branch
         x_b1 = layers.Conv2D(128, (1, 1), strides=(1, 1), padding="same")(x_16)
 
@@ -206,10 +208,8 @@ class MobileNetV3LiteRASPP:
         x_b1 = self._activation(x_b1, at="RE")
 
         # Second branch
-        if(size == 'large'):
-            x_b2 = layers.AveragePooling2D(pool_size=(49, 49), strides=(16, 20))(x_16)
-        else :
-            x_b2 = layers.AveragePooling2D(pool_size=(25, 25), strides=(16, 20))(x_16)
+        x_b2 = layers.AveragePooling2D(pool_size=(int(input_size[1]), int(input_size[2])), strides=(16, 20))(x_16)
+
 
         x_b2 = layers.Conv2D(128, (1, 1))(x_b2)
         x_b2 = layers.Activation("sigmoid")(x_b2)
@@ -226,7 +226,11 @@ class MobileNetV3LiteRASPP:
 
         # Merging merge 1 and branche 3
         x = layers.Add()([x, x_b3])
-        x = layers.Activation("softmax")(x)
+
+        if(self.n_class == 1):
+            x = layers.Activation("sigmoid")(x)
+        else:
+            x = layers.Activation("softmax")(x)
 
         return x
 

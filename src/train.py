@@ -110,8 +110,6 @@ def train():
     else:
         model = model.build_small()
 
-    
-
     try:
         os.mkdir(args.save_path)
     except OSError as ex:
@@ -127,6 +125,7 @@ def train():
             "../data/isic/train/masks",
             batch_size=args.batch_size,
             class_count=args.class_count,
+            picture_size=512,
             model_size=args.model_size,
         )        
         val_generator, c2 = isic_segmentation_data_generator(
