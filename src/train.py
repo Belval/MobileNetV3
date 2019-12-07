@@ -8,7 +8,9 @@ from tensorflow import keras
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras import backend as K
 from loss import dice_coef_multilabel_builder
+from sklearn.metrics import jaccard_score
 import pandas as pd
 from model import MobileNetV3LiteRASPP
 from data_generators import (
@@ -85,6 +87,11 @@ def parse_arguments():
 
     return parser.parse_args()
 
+def jaccard_distance(y_true, y_pred, smooth=100):
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
+    jac = (intersection + smooth) / (sum_ - intersection + smooth)
+    return (1 - jac) * smooth
 
 def train():
     """Train MobileNetV3
@@ -130,7 +137,8 @@ def train():
             model_size=args.model_size,
         )
         model.compile(
-            loss=dice_coef_multilabel_builder(args.class_count),
+            loss=jaccard_distance,
+            # loss=dice_coef_multilabel_builder(args.class_count),
             optimizer=RMSprop(lr=args.learning_rate, momentum=0.9),
             metrics=["accuracy"],
         )
@@ -200,7 +208,7 @@ def train():
         validation_steps=c2 // args.batch_size,
         epochs=args.iteration_count,
         callbacks=[early_stop, mcp_save, tensorboard_callback],
-        class_weight=weights
+        #class_weight=weights
     )
 
     try:
