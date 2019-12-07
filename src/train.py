@@ -137,8 +137,7 @@ def train():
         )
         model.compile(
             loss=jaccard_distance,
-            # loss=dice_coef_multilabel_builder(args.class_count),
-            optimizer=RMSprop(lr=args.learning_rate, momentum=0.9),
+            optimizer=Adam(lr=args.learning_rate),
             metrics=["accuracy"],
         )
     elif args.task == 'classification':

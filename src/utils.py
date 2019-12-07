@@ -46,5 +46,3 @@ def parse_labelme_file(sample_path):
             mask[fill_row_coords, fill_col_coords] = 255
             masks.append((int(shape["label"]), mask))
     return arr, masks
-
-
