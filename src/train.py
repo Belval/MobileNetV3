@@ -6,7 +6,7 @@ import time
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from tensorflow import keras
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.optimizers import Adam, RMSprop
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras import backend as K
 from loss import dice_coef_multilabel_builder
@@ -19,6 +19,9 @@ from data_generators import (
     isic_segmentation_data_generator,
     isic_classification_data_generator,
     isic_classification_augmented_data_generator,
+)
+from utils import (
+    jaccard_distance
 )
 
 
@@ -83,14 +86,24 @@ def parse_arguments():
         help="Task",
         default="classification", 
     )
+    parser.add_argument(
+        "-pw",
+        "--picture-width",
+        type=int,
+        nargs="?",
+        help="Desired width of input image.",
+        default=512,
+    )
+    parser.add_argument(
+        "-ph",
+        "--picture-height",
+        type=int,
+        nargs="?",
+        help="Desired height of input image.",
+        default=512,
+    )
 
     return parser.parse_args()
-
-def jaccard_distance(y_true, y_pred, smooth=100):
-    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
-    sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
-    jac = (intersection + smooth) / (sum_ - intersection + smooth)
-    return (1 - jac) * smooth
 
 def train():
     """Train MobileNetV3
@@ -99,7 +112,7 @@ def train():
     args = parse_arguments()
 
     model = MobileNetV3LiteRASPP(
-        shape=(512, 512, 3),
+        shape=(args.picture_width, args.picture_height, 3),
         n_class=args.class_count,
         task=args.task,
     )

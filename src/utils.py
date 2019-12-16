@@ -3,9 +3,12 @@ import json
 import os
 from PIL import Image
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras import backend as K
 from io import BytesIO
 from PIL import Image, ImageOps
 from skimage import draw
+from tensorflow.keras import backend as K
 
 def resize_and_crop(img, min_side, centering=(0.5, 0.5), rgb=True):
     if not isinstance(img, Image.Image):
@@ -46,3 +49,9 @@ def parse_labelme_file(sample_path):
             mask[fill_row_coords, fill_col_coords] = 255
             masks.append((int(shape["label"]), mask))
     return arr, masks
+
+def jaccard_distance(y_true, y_pred, smooth=100):
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
+    jac = (intersection + smooth) / (sum_ - intersection + smooth)
+    return (1 - jac) * smooth

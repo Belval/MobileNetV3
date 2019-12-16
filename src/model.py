@@ -1,6 +1,8 @@
 import tensorflow as tf
 from tensorflow.keras import backend, layers, models
-
+from utils import (
+    resize_and_crop
+)
 
 
 class MobileNetV3LiteRASPP:
@@ -226,6 +228,11 @@ class MobileNetV3LiteRASPP:
 
         # Merging merge 1 and branche 3
         x = layers.Add()([x, x_b3])
+
+        if(size == 'large'):
+            x = layers.UpSampling2D(size=(8,8))(x)
+        else :
+             x = layers.UpSampling2D(size=(16,16))(x)
 
         if(self.n_class == 1):
             x = layers.Activation("sigmoid")(x)

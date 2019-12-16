@@ -77,10 +77,12 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
         while True:
             images = np.zeros((batch_size, picture_size, picture_size, 3), dtype=np.uint8)
 
-            if model_size == 'large':
-                labels = np.zeros((batch_size, picture_size // 8, picture_size // 8, class_count), dtype=np.uint8)
-            else:
-                labels = np.zeros((batch_size, picture_size // 16, picture_size // 16, class_count), dtype=np.uint8)
+            labels = np.zeros((batch_size, picture_size, picture_size, class_count), dtype=np.uint8)
+
+            # if model_size == 'large':
+            #     labels = np.zeros((batch_size, picture_size // 2, picture_size // 2, class_count), dtype=np.uint8)
+            # else:
+            #     labels = np.zeros((batch_size, picture_size // 4, picture_size // 4, class_count), dtype=np.uint8)
 
             count = 0
             for image_filename in os.listdir(images_dir):
@@ -96,10 +98,11 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
                     f"{image_filename[:-4]}_segmentation.png")
                 )
 
-                if model_size == 'large':
-                    labels[count, :, :, 0] = resize_and_crop(mask, picture_size // 8, centering=centering, rgb=False)
-                else:
-                    labels[count, :, :, 0] = resize_and_crop(mask, picture_size // 16, centering=centering, rgb=False)
+                labels[count, :, :, 0] = resize_and_crop(mask, picture_size, centering=centering, rgb=False)
+                # if model_size == 'large':
+                #     labels[count, :, :, 0] = resize_and_crop(mask, picture_size // 2, centering=centering, rgb=False)
+                # else:
+                #     labels[count, :, :, 0] = resize_and_crop(mask, picture_size // 4, centering=centering, rgb=False)
 
                 labels[count, labels[count, :, :, :] > 0] = 1
                 count += 1
@@ -107,10 +110,11 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
                     yield images, labels
                     images = np.zeros((batch_size, picture_size, picture_size, 3), dtype=np.uint8)
 
-                    if model_size == 'large':
-                        labels = np.zeros((batch_size, picture_size // 8, picture_size // 8, class_count))
-                    else:
-                        labels = np.zeros((batch_size, picture_size // 16, picture_size // 16, class_count))
+                    labels = np.zeros((batch_size, picture_size, picture_size, class_count))
+                    # if model_size == 'large':
+                    #     labels = np.zeros((batch_size, picture_size // 2, picture_size // 2, class_count))
+                    # else:
+                    #     labels = np.zeros((batch_size, picture_size // 4, picture_size // 4, class_count))
 
                     count = 0
     return generator(images_dir, masks_dir, batch_size, class_count), len(os.listdir(images_dir))
