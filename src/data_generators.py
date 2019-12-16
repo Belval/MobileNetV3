@@ -75,12 +75,30 @@ def hazmat_data_generator(samples_dir, batch_size, class_count):
 def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_count, picture_size, model_size='large'):
     def generator(images_dir, masks_dir, batch_size, class_count):
         while True:
+<<<<<<< HEAD
             images = np.zeros((batch_size, picture_size, picture_size, 3), dtype=np.uint8)
+||||||| merged common ancestors
+            images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+=======
+            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
+>>>>>>> Add mixed generator + two head architecture
 
             if model_size == 'large':
+<<<<<<< HEAD
                 labels = np.zeros((batch_size, picture_size // 8, picture_size // 8, class_count), dtype=np.uint8)
+||||||| merged common ancestors
+                labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count), dtype=np.uint8)
+=======
+                labels = np.zeros((batch_size, 512 // 8, 512 // 8, class_count), dtype=np.uint8)
+>>>>>>> Add mixed generator + two head architecture
             else:
+<<<<<<< HEAD
                 labels = np.zeros((batch_size, picture_size // 16, picture_size // 16, class_count), dtype=np.uint8)
+||||||| merged common ancestors
+                labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count), dtype=np.uint8)
+=======
+                labels = np.zeros((batch_size, 512 // 16, 512 // 16, class_count), dtype=np.uint8)
+>>>>>>> Add mixed generator + two head architecture
 
             count = 0
             for image_filename in os.listdir(images_dir):
@@ -89,7 +107,13 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
                     continue
                 p = os.path.join(os.getcwd(), images_dir, image_filename)
                 image = Image.open(p)
+<<<<<<< HEAD
                 images[count, :, :, :] = resize_and_crop(image, picture_size, centering=centering)
+||||||| merged common ancestors
+                images[count, :, :, :] = resize_and_crop(image, 1024, centering=centering)
+=======
+                images[count, :, :, :] = resize_and_crop(image, 512, centering=centering)
+>>>>>>> Add mixed generator + two head architecture
 
                 mask = Image.open(os.path.join(
                     masks_dir,
@@ -97,20 +121,50 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
                 )
 
                 if model_size == 'large':
+<<<<<<< HEAD
                     labels[count, :, :, 0] = resize_and_crop(mask, picture_size // 8, centering=centering, rgb=False)
+||||||| merged common ancestors
+                    labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 8, centering=centering, rgb=False)
+=======
+                    labels[count, :, :, 0] = resize_and_crop(mask, 512 // 8, centering=centering, rgb=False)
+>>>>>>> Add mixed generator + two head architecture
                 else:
+<<<<<<< HEAD
                     labels[count, :, :, 0] = resize_and_crop(mask, picture_size // 16, centering=centering, rgb=False)
+||||||| merged common ancestors
+                    labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 16, centering=centering, rgb=False)
+=======
+                    labels[count, :, :, 0] = resize_and_crop(mask, 512 // 16, centering=centering, rgb=False)
+>>>>>>> Add mixed generator + two head architecture
 
                 labels[count, labels[count, :, :, :] > 0] = 1
                 count += 1
                 if count == batch_size:
                     yield images, labels
+<<<<<<< HEAD
                     images = np.zeros((batch_size, picture_size, picture_size, 3), dtype=np.uint8)
+||||||| merged common ancestors
+                    images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
+=======
+                    images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
+>>>>>>> Add mixed generator + two head architecture
 
                     if model_size == 'large':
+<<<<<<< HEAD
                         labels = np.zeros((batch_size, picture_size // 8, picture_size // 8, class_count))
+||||||| merged common ancestors
+                        labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count))
+=======
+                        labels = np.zeros((batch_size, 512 // 8, 512 // 8, class_count))
+>>>>>>> Add mixed generator + two head architecture
                     else:
+<<<<<<< HEAD
                         labels = np.zeros((batch_size, picture_size // 16, picture_size // 16, class_count))
+||||||| merged common ancestors
+                        labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count))
+=======
+                        labels = np.zeros((batch_size, 512 // 16, 512 // 16, class_count))
+>>>>>>> Add mixed generator + two head architecture
 
                     count = 0
     return generator(images_dir, masks_dir, batch_size, class_count), len(os.listdir(images_dir))
@@ -181,6 +235,166 @@ def isic_classification_augmented_data_generator(images_dir, labels_file, batch_
                     count = 0
     
     return generator(images_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir)), weights
+
+def isic_mixed_data_generator(
+    class_images_dir,
+    labels_file,
+    seg_images_dir,
+    seg_mask_dir,
+    batch_size,
+    class_count,
+    model_size='large',
+    proportions=0.5
+):
+    label_dict = {}
+    with open(labels_file, "r") as f:
+        csvfile = csv.reader(f)
+        # Skip column description
+        next(csvfile)
+        for row in csvfile:
+            label_dict[row[0]] = row[1:].index("1.0")
+
+    counter = {i:0 for i in range(class_count)}
+    for image_filename in os.listdir(class_images_dir):
+        counter[label_dict[image_filename[:-4]]] += 1
+    weights = {i:int(max(counter.values())/counter[i]) for i in range(class_count)}
+
+    def classification_generator():
+        while True:
+            for image_filename in os.listdir(class_images_dir):
+                centering = (round(random.random(), 1), round(random.random(), 1))
+                if image_filename[-3:] not in ('jpg', 'png'):
+                    continue
+                p = os.path.join(class_images_dir, image_filename)
+                image = Image.open(p)
+                yield (
+                    resize_and_crop(image, 512, centering=centering),
+                    label_dict[image_filename[:-4]]
+                )
+
+    def segmentation_generator():
+        while True:
+            for image_filename in os.listdir(seg_images_dir):
+                centering = (round(random.random(), 1), round(random.random(), 1))
+                if image_filename[-3:] not in ('jpg', 'png'):
+                    continue
+                p = os.path.join(os.getcwd(), seg_images_dir, image_filename)
+                image = Image.open(p)
+                mask = Image.open(os.path.join(
+                    seg_mask_dir,
+                    f"{image_filename[:-4]}_segmentation.png")
+                )
+
+                yield (
+                    resize_and_crop(image, 512, centering=centering),
+                    resize_and_crop(mask, 512 // (8 if model_size == "large" else 16), centering=centering, rgb=False)
+                )
+
+    def generator():
+        while True:
+            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
+            class_labels = np.zeros((batch_size, class_count), dtype=np.uint8)
+            if model_size == 'large':
+                seg_labels = np.zeros((batch_size, 512 // 8, 512 // 8, class_count))
+            else:
+                seg_labels = np.zeros((batch_size, 512 // 16, 512 // 16, class_count))
+
+            class_generator = classification_generator()
+            seg_generator = segmentation_generator()
+
+            for i in range(batch_size):
+                if random.random() < proportions:
+                    arr, lbl = next(class_generator)
+                    images[i, :, :, :] = arr
+                    class_labels[i, lbl] = 1
+                else:
+                    arr, mask = next(seg_generator)
+                    images[i, :, :, :] = arr
+                    seg_labels[i, mask > 0] = 1
+
+            yield images, {
+                "segme_out": seg_labels,
+                "class_out": class_labels,
+            }
+
+    return generator(), len(os.listdir(class_images_dir)) + len(os.listdir(seg_images_dir)), weights
+
+def isic_mixed_augmented_data_generator(
+    class_images_dir,
+    labels_file,
+    seg_images_dir,
+    seg_mask_dir,
+    batch_size,
+    class_count,
+    model_size='large',
+    proportions=0.5
+):
+    label_dict = pickle.load(open(labels_file, "rb"))
+
+    counter = {i:1 for i in range(class_count)}
+    for image_filename in os.listdir(class_images_dir):
+        counter[label_dict[image_filename]] += 1
+    weights = {i:int(max(counter.values())/counter[i]) for i in range(class_count)}
+
+    def classification_generator():
+        while True:
+            for image_filename in os.listdir(class_images_dir):
+                centering = (round(random.random(), 1), round(random.random(), 1))
+                if image_filename[-3:] not in ('jpg', 'png'):
+                    continue
+                p = os.path.join(class_images_dir, image_filename)
+                image = Image.open(p)
+                yield (
+                    resize_and_crop(image, 512, centering=centering),
+                    label_dict[image_filename]
+                )
+
+    def segmentation_generator():
+        while True:
+            for image_filename in os.listdir(seg_images_dir):
+                centering = (round(random.random(), 1), round(random.random(), 1))
+                if image_filename[-3:] not in ('jpg', 'png'):
+                    continue
+                p = os.path.join(os.getcwd(), seg_images_dir, image_filename)
+                image = Image.open(p)
+                mask = Image.open(os.path.join(
+                    seg_mask_dir,
+                    f"{image_filename[:-4]}_segmentation.png")
+                )
+
+                yield (
+                    resize_and_crop(image, 512, centering=centering),
+                    resize_and_crop(mask, 512 // (8 if model_size == "large" else 16), centering=centering, rgb=False)
+                )
+
+    def generator():
+        while True:
+            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
+            class_labels = np.zeros((batch_size, class_count), dtype=np.uint8)
+            if model_size == 'large':
+                seg_labels = np.zeros((batch_size, 512 // 8, 512 // 8, class_count))
+            else:
+                seg_labels = np.zeros((batch_size, 512 // 16, 512 // 16, class_count))
+
+            class_generator = classification_generator()
+            seg_generator = segmentation_generator()
+
+            for i in range(batch_size):
+                if random.random() < proportions:
+                    arr, lbl = next(class_generator)
+                    images[i, :, :, :] = arr
+                    class_labels[i, lbl] = 1
+                else:
+                    arr, mask = next(seg_generator)
+                    images[i, :, :, :] = arr
+                    seg_labels[i, mask > 0] = 1
+
+            yield images, {
+                "segme_out": seg_labels,
+                "class_out": class_labels,
+            }
+
+    return generator(), len(os.listdir(class_images_dir)) + len(os.listdir(seg_images_dir)), weights
 
 if __name__ == '__main__':
     train_generator, c1 = isic_data_generator(

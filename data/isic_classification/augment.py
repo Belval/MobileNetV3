@@ -22,10 +22,25 @@ def rotate_save(img, flip, angle, label, new_label_dict, out_dir):
 def process_image(image_filename, in_dir, out_dir, label_dict, count):
     new_label_dict = {}
     img = Image.open(os.path.join(in_dir, image_filename))
-    config = [(False, 0), (False, 90), (False, 180), (False, 270), (True, 0), (True, 90), (True, 180), (True, 270)]
+    config = [
+        (False, 0),
+        (False, 90),
+        (False, 180),
+        (False, 270),
+        (True, 0),
+        (True, 90),
+        (True, 180),
+        (True, 270)
+    ]
+    aug = iaa.Sequential([
+        iaa.OneOf([
+	    iaa.Affine(scale={"x": (0.7, 1.3), "y": (0.7, 1.3)}),
+	    iaa.Affine(rotate=(-25, 25))
+        ])
+    ])
     while count > 0:
         flip, angle = config[(count - 1) % len(config)]
-        rotate_save(img, flip, angle, label_dict[image_filename[:-4]], new_label_dict, out_dir)
+        rotate_save(Image.fromarray(aug(images=[np.array(img)])[0]), flip, angle, label_dict[image_filename[:-4]], new_label_dict, out_dir)
         count -= 1
     return new_label_dict
 
@@ -40,14 +55,20 @@ def main(in_dir, out_dir, labels_file):
 
     new_label_dict = {}
 
-    counter = Counter(label_dict.values())
-    desired_counts = {k:int(0.5 * (max(counter.values()) - n) + n) for k, n in counter.most_common()}
-
-    print(counter)
-    print(desired_counts)
+    counter = {}
 
     files = os.listdir(in_dir)
     random.shuffle(files)
+
+    for f in files:
+        counter[label_dict[f[:-4]]] = counter.get(label_dict[f[:-4]], 0) + 1
+
+    print(counter)
+
+    desired_counts = {k:int(max(0.5*(max(counter.values()) - n) + n, n)) for k, n in counter.items()}
+
+    print(desired_counts)
+
     print(len(files))
     p = Pool(16)
     dicts = p.starmap(
@@ -63,7 +84,7 @@ def main(in_dir, out_dir, labels_file):
             for image_filename in files
         ]
     )
-        
+
     combined_dict = {}
     for d in dicts:
         combined_dict.update(d)

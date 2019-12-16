@@ -1,10 +1,12 @@
 import argparse
-
+import os
+import csv
 import cv2
 import numpy as np
 from PIL import Image
 from model import MobileNetV3LiteRASPP
 from utils import resize_and_crop
+from sklearn import metrics
 
 def parse_arguments():
     """Parse commandline arguments
@@ -22,10 +24,17 @@ def parse_arguments():
     )
     parser.add_argument(
         "-i",
-        "--input-image",
+        "--input-dir",
         type=str,
         nargs="?",
-        help="Input image to run inference on",
+        help="Input directory to run inference on",
+    )
+    parser.add_argument(
+        "-l",
+        "--labels-file",
+        type=str,
+        nargs="?",
+        help="Label file",
     )
     parser.add_argument(
         "-cc",
@@ -34,14 +43,6 @@ def parse_arguments():
         nargs="?",
         help="Number of classes",
         default=90,  # Number of classes in coco 2017
-    )
-    parser.add_argument(
-        "-th",
-        "--threshold",
-        type=float,
-        nargs="?",
-        help="Threshold to consider a pixel as belonging to a category",
-        default=0.5
     )
     parser.add_argument(
         "-ms",
@@ -72,6 +73,14 @@ def evaluate():
     # Load model
     model = MobileNetV3LiteRASPP(shape=(512, 512, 3), n_class=args.class_count, task=args.task)
 
+    label_dict = {}
+    with open(args.labels_file, "r") as f:
+        csvfile = csv.reader(f)
+        # Skip column description
+        next(csvfile)
+        for row in csvfile:
+            label_dict[row[0]] = row[1:].index("1.0")
+
     if(args.model_size == "large"):
         model = model.build_large()
     else:
@@ -79,29 +88,24 @@ def evaluate():
 
     model.load_weights(args.save_path, by_name=True)
 
-    # Load image
-    #images = resize_and_crop(Image.open(args.input_image), 1024)[np.newaxis, :, :, :]
-    image = Image.open(args.input_image)
-    image.thumbnail((512, 512))
-    image_arr = np.array(image)
-    images = np.zeros((1, 512, 512, 3), dtype=np.uint8)
-    images[0, 0:image_arr.shape[0], 0:image_arr.shape[1], :] = image_arr
+    images = np.zeros((len(os.listdir(args.input_dir)), 512, 512, 3))
+    labels = np.zeros((len(os.listdir(args.input_dir)), args.class_count))
+    for i, filename in enumerate(os.listdir(args.input_dir)):
+        img = resize_and_crop(Image.open(os.path.join(args.input_dir, filename)), 512)
+        images[i, :, :, :] = np.array(img)
+        labels[i, label_dict[filename[:-4]]] = 1
 
-    # Reference image
-    image.thumbnail((128, 128))
-    image.save("ref.png")
-
-    predictions = model.predict(images, batch_size=1)
-
-    print(predictions)
-
-    predictions *= 255
-    predictions = predictions.astype(np.uint8)
-
-
-    for i in range(predictions.shape[-1]):
-        ret, th = cv2.threshold(predictions[0, 0:image.size[1], 0:image.size[0], i], 0, 255, cv2.THRESH_OTSU)
-        cv2.imwrite(f"out/{i}.png", th)
+    preds = model.predict(images)
+    print(labels.argmax(axis=1))
+    print(preds.argmax(axis=1))
+    matrix = metrics.confusion_matrix(labels.argmax(axis=1), preds.argmax(axis=1))
+    f1 = metrics.f1_score(labels.argmax(axis=1), preds.argmax(axis=1), average=None)
+    acc = 0
+    for i in range(matrix.shape[0]):
+        acc += matrix[i, i] / sum(matrix[i, :])
+    print(np.around(matrix / np.sum(matrix, axis=1)[:, None], decimals=2))
+    print(acc / args.class_count)
+    print(f1)
 
 if __name__ == "__main__":
     evaluate()

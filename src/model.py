@@ -65,10 +65,21 @@ class MobileNetV3LiteRASPP:
 
         if self.task == "segmentation":
             x = self._segmentation_head(x_16, x_8)
-        else:
+            model = models.Model(inputs, x, name="mn3-large-segmentation")
+        elif self.task == "classification":
             x = self._classification_head(x_16)
-
-        model = models.Model(inputs, x)
+            model = models.Model(inputs, x, name="mn3-large-classification")
+        else:
+            xs = self._segmentation_head(x_16, x_8)
+            xc = self._classification_head(x_16)
+            model = models.Model(
+                inputs=inputs,
+                outputs={
+                    "segme_out": xs,
+                    "class_out": xc
+                },
+                name="mn3-large-2head"
+            )
 
         return model
 
@@ -124,10 +135,21 @@ class MobileNetV3LiteRASPP:
 
         if self.task == "segmentation":
             x = self._segmentation_head(x_16, x_8, size="small")
-        else:
+            model = models.Model(inputs, x, name="mn3-small-segmentation")
+        elif self.task == "classification":
             x = self._classification_head(x_16)
-
-        model = models.Model(inputs, x)
+            model = models.Model(inputs, x, name="mn3-small-classification")
+        else:
+            xs = self._segmentation_head(x_16, x_8, size="small")
+            xc = self._classification_head(x_16)
+            model = models.Model(
+                inputs=inputs,
+                outputs={
+                    "segme_out": xs,
+                    "class_out": xc
+                },
+                name="mn3-small-2head"
+            )
 
         return model
 
@@ -190,7 +212,7 @@ class MobileNetV3LiteRASPP:
         # Final layer
         #x = layers.Conv2D(1000, (1, 1), strides=(1, 1), padding="same")(x)
         x = layers.Reshape((1280,))(x)
-        x = layers.Dense(self.n_class, activation="softmax")(x)
+        x = layers.Dense(self.n_class, activation="softmax", name="class_out")(x)
 
         return x
 
@@ -208,8 +230,10 @@ class MobileNetV3LiteRASPP:
         x_b1 = self._activation(x_b1, at="RE")
 
         # Second branch
-        x_b2 = layers.AveragePooling2D(pool_size=(int(input_size[1]), int(input_size[2])), strides=(16, 20))(x_16)
-
+        if(size == 'large'):
+            x_b2 = layers.AveragePooling2D(pool_size=(25, 25), strides=(16, 20))(x_16)
+        else :
+            x_b2 = layers.AveragePooling2D(pool_size=(16, 16), strides=(16, 20))(x_16)
 
         x_b2 = layers.Conv2D(128, (1, 1))(x_b2)
         x_b2 = layers.Activation("sigmoid")(x_b2)
