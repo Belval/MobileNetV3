@@ -75,30 +75,12 @@ def hazmat_data_generator(samples_dir, batch_size, class_count):
 def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_count, picture_size, model_size='large'):
     def generator(images_dir, masks_dir, batch_size, class_count):
         while True:
-<<<<<<< HEAD
             images = np.zeros((batch_size, picture_size, picture_size, 3), dtype=np.uint8)
-||||||| merged common ancestors
-            images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
-=======
-            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
->>>>>>> Add mixed generator + two head architecture
 
             if model_size == 'large':
-<<<<<<< HEAD
                 labels = np.zeros((batch_size, picture_size // 8, picture_size // 8, class_count), dtype=np.uint8)
-||||||| merged common ancestors
-                labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count), dtype=np.uint8)
-=======
-                labels = np.zeros((batch_size, 512 // 8, 512 // 8, class_count), dtype=np.uint8)
->>>>>>> Add mixed generator + two head architecture
             else:
-<<<<<<< HEAD
                 labels = np.zeros((batch_size, picture_size // 16, picture_size // 16, class_count), dtype=np.uint8)
-||||||| merged common ancestors
-                labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count), dtype=np.uint8)
-=======
-                labels = np.zeros((batch_size, 512 // 16, 512 // 16, class_count), dtype=np.uint8)
->>>>>>> Add mixed generator + two head architecture
 
             count = 0
             for image_filename in os.listdir(images_dir):
@@ -107,13 +89,7 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
                     continue
                 p = os.path.join(os.getcwd(), images_dir, image_filename)
                 image = Image.open(p)
-<<<<<<< HEAD
                 images[count, :, :, :] = resize_and_crop(image, picture_size, centering=centering)
-||||||| merged common ancestors
-                images[count, :, :, :] = resize_and_crop(image, 1024, centering=centering)
-=======
-                images[count, :, :, :] = resize_and_crop(image, 512, centering=centering)
->>>>>>> Add mixed generator + two head architecture
 
                 mask = Image.open(os.path.join(
                     masks_dir,
@@ -121,50 +97,20 @@ def isic_segmentation_data_generator(images_dir, masks_dir, batch_size, class_co
                 )
 
                 if model_size == 'large':
-<<<<<<< HEAD
                     labels[count, :, :, 0] = resize_and_crop(mask, picture_size // 8, centering=centering, rgb=False)
-||||||| merged common ancestors
-                    labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 8, centering=centering, rgb=False)
-=======
-                    labels[count, :, :, 0] = resize_and_crop(mask, 512 // 8, centering=centering, rgb=False)
->>>>>>> Add mixed generator + two head architecture
                 else:
-<<<<<<< HEAD
                     labels[count, :, :, 0] = resize_and_crop(mask, picture_size // 16, centering=centering, rgb=False)
-||||||| merged common ancestors
-                    labels[count, :, :, 0] = resize_and_crop(mask, 1024 // 16, centering=centering, rgb=False)
-=======
-                    labels[count, :, :, 0] = resize_and_crop(mask, 512 // 16, centering=centering, rgb=False)
->>>>>>> Add mixed generator + two head architecture
 
                 labels[count, labels[count, :, :, :] > 0] = 1
                 count += 1
                 if count == batch_size:
                     yield images, labels
-<<<<<<< HEAD
                     images = np.zeros((batch_size, picture_size, picture_size, 3), dtype=np.uint8)
-||||||| merged common ancestors
-                    images = np.zeros((batch_size, 1024, 1024, 3), dtype=np.uint8)
-=======
-                    images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
->>>>>>> Add mixed generator + two head architecture
 
                     if model_size == 'large':
-<<<<<<< HEAD
                         labels = np.zeros((batch_size, picture_size // 8, picture_size // 8, class_count))
-||||||| merged common ancestors
-                        labels = np.zeros((batch_size, 1024 // 8, 1024 // 8, class_count))
-=======
-                        labels = np.zeros((batch_size, 512 // 8, 512 // 8, class_count))
->>>>>>> Add mixed generator + two head architecture
                     else:
-<<<<<<< HEAD
                         labels = np.zeros((batch_size, picture_size // 16, picture_size // 16, class_count))
-||||||| merged common ancestors
-                        labels = np.zeros((batch_size, 1024 // 16, 1024 // 16, class_count))
-=======
-                        labels = np.zeros((batch_size, 512 // 16, 512 // 16, class_count))
->>>>>>> Add mixed generator + two head architecture
 
                     count = 0
     return generator(images_dir, masks_dir, batch_size, class_count), len(os.listdir(images_dir))
