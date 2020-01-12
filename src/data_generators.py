@@ -132,7 +132,7 @@ def isic_classification_data_generator(images_dir, labels_file, batch_size, clas
 
     def generator(images_dir, labels_file, batch_size, class_count):
         while True:
-            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
+            images = np.zeros((batch_size, 256, 256, 3), dtype=np.uint8)
             labels = np.zeros((batch_size, class_count), dtype=np.uint8)
             count = 0
             for image_filename in os.listdir(images_dir):
@@ -141,58 +141,16 @@ def isic_classification_data_generator(images_dir, labels_file, batch_size, clas
                     continue
                 p = os.path.join(images_dir, image_filename)
                 image = Image.open(p)
-                images[count, :, :, :] = resize_and_crop(image, 512, centering=centering)
+                images[count, :, :, :] = resize_and_crop(image, 256, centering=centering)
                 labels[count, label_dict[image_filename[:-4]]] = 1
                 count += 1
                 if count == batch_size:
                     yield images, labels
-                    images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
+                    images = np.zeros((batch_size, 256, 256, 3), dtype=np.uint8)
                     labels = np.zeros((batch_size, class_count))
                     count = 0
     
     return generator(images_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir)), weights
-
-def isic_classification_data_generator_with_mask(images_dir, masks_dir, labels_file, batch_size, class_count):
-    label_dict = {}
-    with open(labels_file, "r") as f:
-        csvfile = csv.reader(f)
-        # Skip column description
-        next(csvfile)
-        for row in csvfile:
-            print(row)
-            label_dict[row[0]] = row[1:].index("1.0")
-
-    counter = {i:0 for i in range(class_count)}
-    for image_filename in os.listdir(images_dir):
-        counter[label_dict[image_filename[:-4]]] += 1
-    weights = {i:int(max(counter.values())/counter[i]) for i in range(class_count)}
-
-    def generator(images_dir, masks_dir, labels_file, batch_size, class_count):
-        while True:
-            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
-            labels = np.zeros((batch_size, class_count), dtype=np.uint8)
-            count = 0
-            for image_filename in os.listdir(images_dir):
-                centering = (round(random.random(), 1), round(random.random(), 1))
-                if image_filename[-3:] not in ('jpg', 'png'):
-                    continue
-                img_p = os.path.join(images_dir, image_filename)
-                mask_p = os.path.join(masks_dir, ".".join(image_filename.split('.')[:-1]) + "_segmentation.png")
-                image = Image.open(img_p)
-                mask = Image.open(mask_p).convert('1')
-                arr = np.array(image)
-                arr[np.array(mask) == 0] = 0
-                image = Image.fromarray(arr)
-                images[count, :, :, :] = resize_and_crop(image, 512, centering=centering)
-                labels[count, label_dict[image_filename[:-4]]] = 1
-                count += 1
-                if count == batch_size:
-                    yield images, labels
-                    images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
-                    labels = np.zeros((batch_size, class_count))
-                    count = 0
-    
-    return generator(images_dir, masks_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir)), weights
 
 def isic_classification_augmented_data_generator(images_dir, labels_file, batch_size, class_count):
     label_dict = pickle.load(open(labels_file, "rb"))
@@ -204,7 +162,7 @@ def isic_classification_augmented_data_generator(images_dir, labels_file, batch_
 
     def generator(images_dir, labels_file, batch_size, class_count):
         while True:
-            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
+            images = np.zeros((batch_size, 256, 256, 3), dtype=np.uint8)
             labels = np.zeros((batch_size, class_count), dtype=np.uint8)
             count = 0
             for image_filename in os.listdir(images_dir):
@@ -218,46 +176,11 @@ def isic_classification_augmented_data_generator(images_dir, labels_file, batch_
                 count += 1
                 if count == batch_size:
                     yield images, labels
-                    images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
+                    images = np.zeros((batch_size, 256, 256, 3), dtype=np.uint8)
                     labels = np.zeros((batch_size, class_count))
                     count = 0
     
     return generator(images_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir)), weights
-
-def isic_classification_augmented_data_generator_with_mask(images_dir, masks_dir, labels_file, batch_size, class_count):
-    label_dict = pickle.load(open(labels_file, "rb"))
-
-    counter = {i:1 for i in range(class_count)}
-    for image_filename in os.listdir(images_dir):
-        counter[label_dict[image_filename]] += 1
-    weights = {i:int(max(counter.values())/counter[i]) for i in range(class_count)}
-
-    def generator(images_dir, masks_dir, labels_file, batch_size, class_count):
-        while True:
-            images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
-            labels = np.zeros((batch_size, class_count), dtype=np.uint8)
-            count = 0
-            for image_filename in os.listdir(images_dir):
-                centering = (round(random.random(), 1), round(random.random(), 1))
-                if image_filename[-3:] not in ('jpg', 'png'):
-                    continue
-                img_p = os.path.join(images_dir, image_filename)
-                mask_p = os.path.join(masks_dir, ".".join(image_filename.split('.')[:-1]) + "_segmentation.png")
-                image = Image.open(img_p)
-                mask = Image.open(mask_p).convert('1')
-                arr = np.array(image)
-                arr[np.array(mask) == 0] = 0
-                image = Image.fromarray(arr)
-                images[count, :, :, :] = resize_and_crop(image, 512, centering=centering)
-                labels[count, label_dict[image_filename]] = 1
-                count += 1
-                if count == batch_size:
-                    yield images, labels
-                    images = np.zeros((batch_size, 512, 512, 3), dtype=np.uint8)
-                    labels = np.zeros((batch_size, class_count))
-                    count = 0
-    
-    return generator(images_dir, masks_dir, labels_file, batch_size, class_count), len(os.listdir(images_dir)), weights
 
 def isic_mixed_data_generator(
     class_images_dir,

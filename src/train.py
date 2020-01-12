@@ -10,7 +10,7 @@ from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras import backend as K
-from loss import (
+from losses import (
     dice_coef_multilabel_builder,
     jaccard_distance,
     weighted_categorical_crossentropy,
@@ -102,7 +102,7 @@ def train():
     args = parse_arguments()
 
     model = MobileNetV3LiteRASPP(
-        shape=(512, 512, 3),
+        shape=(256, 256, 3),
         n_class=args.class_count,
         task=args.task,
     )
@@ -157,16 +157,14 @@ def train():
             metrics=["accuracy"],
         )
     elif args.task == 'classification':
-        train_generator, c1, weights = isic_classification_augmented_data_generator_with_mask(
+        train_generator, c1, weights = isic_classification_augmented_data_generator(
             "../data/isic_classification/train_aug/imgs",
-            "../data/isic_classification/train_aug/masks",
             "../data/isic_classification/label_dict.pkl",
             batch_size=args.batch_size,
             class_count=args.class_count,
         )
-        val_generator, c2, _ = isic_classification_data_generator_with_mask(
+        val_generator, c2, _ = isic_classification_data_generator(
            "../data/isic_classification/val/imgs",
-           "../data/isic_classification/val/masks",
            "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
            batch_size=args.batch_size,
            class_count=args.class_count,
