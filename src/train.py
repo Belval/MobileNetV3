@@ -10,21 +10,25 @@ from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras import backend as K
-from loss import dice_coef_multilabel_builder, jaccard_distance
+from loss import (
+    dice_coef_multilabel_builder,
+    jaccard_distance,
+    weighted_categorical_crossentropy,
+)
 from sklearn.metrics import jaccard_score
 import pandas as pd
 from model import MobileNetV3LiteRASPP
-from utils import weighted_categorical_crossentropy
 from data_generators import (
     coco_data_generator,
     hazmat_data_generator,
     #hltid_data_generator,
     isic_segmentation_data_generator,
     isic_classification_data_generator,
+    isic_classification_data_generator_with_mask,
     isic_classification_augmented_data_generator,
     isic_mixed_data_generator,
     isic_mixed_augmented_data_generator,
-
+    isic_classification_augmented_data_generator_with_mask,
 )
 
 def parse_arguments():
@@ -134,6 +138,18 @@ def train():
             picture_size=512,
             model_size=args.model_size,
         )
+        #train_generator, c1 = hazmat_data_generator(
+        #    "../data/hazmat/train/",
+        #    batch_size=args.batch_size,
+        #    picture_size=512,
+        #    class_count=args.class_count,
+        #)
+        #val_generator, c2 = hazmat_data_generator(
+        #    "../data/hazmat/val/",
+        #    batch_size=args.batch_size,
+        #    picture_size=512,
+        #    class_count=args.class_count,
+        #)
         model.compile(
             loss=jaccard_distance,
             # loss=dice_coef_multilabel_builder(args.class_count),
@@ -141,14 +157,16 @@ def train():
             metrics=["accuracy"],
         )
     elif args.task == 'classification':
-        train_generator, c1, weights = isic_classification_augmented_data_generator(
-            "../data/isic_classification/train_aug/",
+        train_generator, c1, weights = isic_classification_augmented_data_generator_with_mask(
+            "../data/isic_classification/train_aug/imgs",
+            "../data/isic_classification/train_aug/masks",
             "../data/isic_classification/label_dict.pkl",
             batch_size=args.batch_size,
             class_count=args.class_count,
         )
-        val_generator, c2, _ = isic_classification_data_generator(
-           "../data/isic_classification/val/",
+        val_generator, c2, _ = isic_classification_data_generator_with_mask(
+           "../data/isic_classification/val/imgs",
+           "../data/isic_classification/val/masks",
            "../data/isic_classification/ISIC2018_Task3_Training_GroundTruth.csv",
            batch_size=args.batch_size,
            class_count=args.class_count,

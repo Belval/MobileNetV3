@@ -70,6 +70,7 @@ class MobileNetV3LiteRASPP:
             x = self._classification_head(x_16)
             model = models.Model(inputs, x, name="mn3-large-classification")
         else:
+            print("Here")
             xs = self._segmentation_head(x_16, x_8)
             xc = self._classification_head(x_16)
             model = models.Model(
@@ -252,9 +253,9 @@ class MobileNetV3LiteRASPP:
         x = layers.Add()([x, x_b3])
 
         if(self.n_class == 1):
-            x = layers.Activation("sigmoid")(x)
+            x = layers.Activation("sigmoid", name="segme_out")(x)
         else:
-            x = layers.Activation("softmax")(x)
+            x = layers.Activation("softmax", name="segme_out")(x)
 
         return x
 
