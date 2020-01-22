@@ -14,9 +14,9 @@ def resize_and_crop(img, min_side, centering=(0.5, 0.5), rgb=True):
         img = Image.fromarray(img)
 
     img = resize_with_min_size(img, min_side)
-    
+
     img = ImageOps.fit(img, (min_side, min_side), centering=centering)
-    
+
     if rgb:
         img = img.convert("RGB")
         return np.array(img)
@@ -27,6 +27,7 @@ def resize_and_crop(img, min_side, centering=(0.5, 0.5), rgb=True):
         arr[arr > 0] = 1
         return arr
 
+
 def resize_with_min_size(img, min_side):
     w, h = img.size
     if h < w:
@@ -35,8 +36,9 @@ def resize_with_min_size(img, min_side):
         img = img.resize((min_side, int(h * (min_side / w)) + 1))
     return img
 
+
 def parse_labelme_file(sample_path):
-    with open(sample_path, 'r') as f:
+    with open(sample_path, "r") as f:
         sample = json.load(f)
         data = base64.b64decode(sample["imageData"])
         arr = np.array(Image.open(BytesIO(data)))
@@ -44,11 +46,11 @@ def parse_labelme_file(sample_path):
         for shape in sample["shapes"]:
             col_coords, row_coords = zip(*shape["points"])
             fill_row_coords, fill_col_coords = draw.polygon(
-                row_coords,
-                col_coords,
-                (sample["imageHeight"], sample["imageWidth"])
+                row_coords, col_coords, (sample["imageHeight"], sample["imageWidth"])
             )
-            mask = np.zeros((sample["imageHeight"], sample["imageWidth"]), dtype=np.uint8)
+            mask = np.zeros(
+                (sample["imageHeight"], sample["imageWidth"]), dtype=np.uint8
+            )
             mask[fill_row_coords, fill_col_coords] = 255
             masks.append((int(shape["label"]), mask))
     return arr, masks

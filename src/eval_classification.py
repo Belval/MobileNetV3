@@ -8,6 +8,7 @@ from model import MobileNetV3LiteRASPP
 from utils import resize_and_crop
 from sklearn import metrics
 
+
 def parse_arguments():
     """Parse commandline arguments
     """
@@ -29,13 +30,7 @@ def parse_arguments():
         nargs="?",
         help="Input directory to run inference on",
     )
-    parser.add_argument(
-        "-l",
-        "--labels-file",
-        type=str,
-        nargs="?",
-        help="Label file",
-    )
+    parser.add_argument("-l", "--labels-file", type=str, nargs="?", help="Label file")
     parser.add_argument(
         "-cc",
         "--class-count",
@@ -45,20 +40,10 @@ def parse_arguments():
         default=90,  # Number of classes in coco 2017
     )
     parser.add_argument(
-        "-ms",
-        "--model-size",
-        type=str,
-        nargs="?",
-        help="Model size",
-        default="large", 
+        "-ms", "--model-size", type=str, nargs="?", help="Model size", default="large"
     )
     parser.add_argument(
-        "-t",
-        "--task",
-        type=str,
-        nargs="?",
-        help="Task",
-        default="classification", 
+        "-t", "--task", type=str, nargs="?", help="Task", default="classification"
     )
 
     return parser.parse_args()
@@ -71,7 +56,9 @@ def evaluate():
     args = parse_arguments()
 
     # Load model
-    model = MobileNetV3LiteRASPP(shape=(512, 512, 3), n_class=args.class_count, task=args.task)
+    model = MobileNetV3LiteRASPP(
+        shape=(512, 512, 3), n_class=args.class_count, task=args.task
+    )
 
     label_dict = {}
     with open(args.labels_file, "r") as f:
@@ -81,7 +68,7 @@ def evaluate():
         for row in csvfile:
             label_dict[row[0]] = row[1:].index("1.0")
 
-    if(args.model_size == "large"):
+    if args.model_size == "large":
         model = model.build_large()
     else:
         model = model.build_small()
@@ -106,6 +93,7 @@ def evaluate():
     print(np.around(matrix / np.sum(matrix, axis=1)[:, None], decimals=2))
     print(acc / args.class_count)
     print(f1)
+
 
 if __name__ == "__main__":
     evaluate()

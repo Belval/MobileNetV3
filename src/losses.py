@@ -6,16 +6,20 @@ def dice_coef(y_true, y_pred):
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
     intersection = K.sum(y_true_f * y_pred_f)
-    return (2. * intersection) / (K.sum(y_true_f) + K.sum(y_pred_f))
+    return (2.0 * intersection) / (K.sum(y_true_f) + K.sum(y_pred_f))
+
 
 def dice_coef_multilabel_builder(num_labels):
     def dice_coef_multilabel(y_true, y_pred):
-        dice=0
+        dice = 0
         for index in range(num_labels):
-            dice += (1 - dice_coef(y_true[:,:,:,index], y_pred[:,:,:,index])) / num_labels
+            dice += (
+                1 - dice_coef(y_true[:, :, :, index], y_pred[:, :, :, index])
+            ) / num_labels
         return dice
 
     return dice_coef_multilabel
+
 
 def jaccard_distance(y_true, y_pred, smooth=100):
     if K.sum(y_pred) == 0:
@@ -25,6 +29,7 @@ def jaccard_distance(y_true, y_pred, smooth=100):
     sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
     jac = (intersection + smooth) / (sum_ - intersection + smooth)
     return (1 - jac) * smooth
+
 
 def weighted_categorical_crossentropy(weights):
     """
@@ -38,9 +43,9 @@ def weighted_categorical_crossentropy(weights):
         loss = weighted_categorical_crossentropy(weights)
         model.compile(loss=loss,optimizer='adam')
     """
-    
+
     weights = K.variable(weights)
-        
+
     def loss(y_true, y_pred):
         if K.sum(y_pred) == 0:
             return 0
@@ -52,5 +57,5 @@ def weighted_categorical_crossentropy(weights):
         loss = y_true * K.log(y_pred) * weights
         loss = -K.sum(loss, -1)
         return loss
-    
+
     return loss

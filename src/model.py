@@ -2,7 +2,6 @@ import tensorflow as tf
 from tensorflow.keras import backend, layers, models
 
 
-
 class MobileNetV3LiteRASPP:
     def __init__(self, shape, n_class, task):
         self.shape = shape
@@ -75,15 +74,11 @@ class MobileNetV3LiteRASPP:
             xc = self._classification_head(x_16)
             model = models.Model(
                 inputs=inputs,
-                outputs={
-                    "segme_out": xs,
-                    "class_out": xc
-                },
-                name="mn3-large-2head"
+                outputs={"segme_out": xs, "class_out": xc},
+                name="mn3-large-2head",
             )
 
         return model
-
 
     def build_small(self):
         inputs = layers.Input(shape=self.shape)
@@ -145,15 +140,11 @@ class MobileNetV3LiteRASPP:
             xc = self._classification_head(x_16)
             model = models.Model(
                 inputs=inputs,
-                outputs={
-                    "segme_out": xs,
-                    "class_out": xc
-                },
-                name="mn3-small-2head"
+                outputs={"segme_out": xs, "class_out": xc},
+                name="mn3-small-2head",
             )
 
         return model
-
 
     def _bneck(self, x, filters, kernel, expansion, strides, squeeze, at):
         x_copy = x
@@ -194,9 +185,15 @@ class MobileNetV3LiteRASPP:
     def _classification_head(self, x_8):
         # 1/32
         # 13th bottleneck block (C4) https://arxiv.org/pdf/1905.02244v4.pdf p.7
-        x, _, _, _ = self._bneck(x_8, 160, (5, 5), expansion=672, strides=2, squeeze=True, at="HS")
-        x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
-        x, _, _, _ = self._bneck(x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS")
+        x, _, _, _ = self._bneck(
+            x_8, 160, (5, 5), expansion=672, strides=2, squeeze=True, at="HS"
+        )
+        x, _, _, _ = self._bneck(
+            x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS"
+        )
+        x, _, _, _ = self._bneck(
+            x, 160, (5, 5), expansion=960, strides=1, squeeze=True, at="HS"
+        )
 
         # Layer immediatly before pooling (C5) https://arxiv.org/pdf/1905.02244v4.pdf p.7
         x = layers.Conv2D(960, (1, 1), strides=(1, 1), padding="same")(x)
@@ -211,13 +208,13 @@ class MobileNetV3LiteRASPP:
         x = self._activation(x, "HS")
 
         # Final layer
-        #x = layers.Conv2D(1000, (1, 1), strides=(1, 1), padding="same")(x)
+        # x = layers.Conv2D(1000, (1, 1), strides=(1, 1), padding="same")(x)
         x = layers.Reshape((1280,))(x)
         x = layers.Dense(self.n_class, activation="softmax", name="class_out")(x)
 
         return x
 
-    def _segmentation_head(self, x_16, x_8, size='large'):
+    def _segmentation_head(self, x_16, x_8, size="large"):
         x_copy = x_16
         input_size = x_16.shape
 
@@ -231,9 +228,9 @@ class MobileNetV3LiteRASPP:
         x_b1 = self._activation(x_b1, at="RE")
 
         # Second branch
-        if(size == 'large'):
+        if size == "large":
             x_b2 = layers.AveragePooling2D(pool_size=(25, 25), strides=(16, 20))(x_16)
-        else :
+        else:
             x_b2 = layers.AveragePooling2D(pool_size=(16, 16), strides=(16, 20))(x_16)
 
         x_b2 = layers.Conv2D(128, (1, 1))(x_b2)
@@ -252,7 +249,7 @@ class MobileNetV3LiteRASPP:
         # Merging merge 1 and branche 3
         x = layers.Add()([x, x_b3])
 
-        if(self.n_class == 1):
+        if self.n_class == 1:
             x = layers.Activation("sigmoid", name="segme_out")(x)
         else:
             x = layers.Activation("softmax", name="segme_out")(x)
