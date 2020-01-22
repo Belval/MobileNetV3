@@ -58,4 +58,4 @@ TODO
 
 **To get predictions for multiple images**
 
-Run `python3 eval_classification.py --model-path out/ --input-dir your_test_dir/ --labels-file labels.csv` to output the confusion matrix.
+Run `python3 eval_classification.py --model-path out/your_model.h5 --input-dir your_test_dir/ --labels-file labels.csv` to output the confusion matrix.
