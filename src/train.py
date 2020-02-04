@@ -1,6 +1,7 @@
 import argparse
 import errno
 import os
+import random
 import time
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -21,7 +22,7 @@ from model import MobileNetV3LiteRASPP
 from data_generators import (
     coco_data_generator,
     hazmat_data_generator,
-    # hltid_data_generator,
+    hltid_data_generator,
     isic_segmentation_data_generator,
     isic_classification_data_generator,
     isic_classification_augmented_data_generator,
@@ -65,7 +66,7 @@ def parse_arguments():
         type=float,
         nargs="?",
         help="Learning rate",
-        default=0.0005,
+        default=0.001,
     )
     parser.add_argument(
         "-cc",
@@ -92,6 +93,15 @@ def parse_arguments():
 
     return parser.parse_args()
 
+def combine_generators(gen1, gen2):
+    """Combine two generators
+    """
+
+    while True:
+        if random.random() > 0.5:
+            yield next(gen1)
+        else:
+            yield next(gen2)
 
 def train():
     """Train MobileNetV3
@@ -100,7 +110,7 @@ def train():
     args = parse_arguments()
 
     model = MobileNetV3LiteRASPP(
-        shape=(256, 256, 3), n_class=args.class_count, task=args.task
+        shape=(args.picture_size, args.picture_size, 3), n_class=args.class_count, task=args.task
     )
 
     if args.model_size == "large":
@@ -115,40 +125,58 @@ def train():
             raise
         pass
 
-    early_stop = EarlyStopping(monitor="val_acc", patience=10, mode="auto")
+    early_stop = EarlyStopping(monitor="val_loss", patience=50, mode="auto")
 
     if args.task == "segmentation":
-        train_generator, c1 = isic_segmentation_data_generator(
-            "../data/isic_segmentation/train/imgs",
-            "../data/isic_segmentation/train/masks",
-            batch_size=args.batch_size,
-            class_count=args.class_count,
-            picture_size=args.picture_size,
-            model_size=args.model_size,
-        )
-        val_generator, c2 = isic_segmentation_data_generator(
-            "../data/isic_segmentation/val/imgs",
-            "../data/isic_segmentation/val/masks",
-            batch_size=args.batch_size,
-            class_count=args.class_count,
-            picture_size=args.picture_size,
-            model_size=args.model_size,
-        )
-        # train_generator, c1 = hazmat_data_generator(
-        #    "../data/hazmat/train/",
+        #train_generator, c1 = isic_segmentation_data_generator(
+        #    "../data/isic_segmentation/train/imgs",
+        #    "../data/isic_segmentation/train/masks",
         #    batch_size=args.batch_size,
-        #    picture_size=512,
         #    class_count=args.class_count,
-        # )
-        # val_generator, c2 = hazmat_data_generator(
-        #    "../data/hazmat/val/",
+        #    picture_size=args.picture_size,
+        #    model_size=args.model_size,
+        #)
+        #val_generator, c2 = isic_segmentation_data_generator(
+        #    "../data/isic_segmentation/val/imgs",
+        #    "../data/isic_segmentation/val/masks",
         #    batch_size=args.batch_size,
-        #    picture_size=512,
         #    class_count=args.class_count,
-        # )
+        #    picture_size=args.picture_size,
+        #    model_size=args.model_size,
+        #)
+        train_gen_1, c11 = hltid_data_generator(
+           "../data/HLTID-Small/train/",
+           "../data/HLTID-Small/train/",
+           batch_size=args.batch_size,
+           picture_size=512,
+           class_count=args.class_count,
+           model_size=args.model_size,
+        )
+        #val_gen_1, c21 = hltid_data_generator(
+        #   "../data/HLTID-Small/val/",
+        #   "../data/HLTID-Small/val/",
+        #   batch_size=args.batch_size,
+        #   picture_size=512,
+        #   class_count=args.class_count,
+        #   model_size=args.model_size,
+        #)
+        train_gen_2, c12 = hazmat_data_generator(
+           "../data/hazmat/train/",
+           batch_size=args.batch_size,
+           picture_size=512,
+           class_count=args.class_count,
+        )
+        val_generator, c2 = hazmat_data_generator(
+           "../data/hazmat/val/",
+           batch_size=args.batch_size,
+           picture_size=512,
+           class_count=args.class_count,
+        )
+        train_generator = combine_generators(train_gen_1, train_gen_2)
+        c1 = c11 + c12
         model.compile(
-            loss=jaccard_distance,
-            # loss=dice_coef_multilabel_builder(args.class_count),
+            #loss=jaccard_distance,
+            loss=dice_coef_multilabel_builder(args.class_count),
             optimizer=Adam(lr=args.learning_rate),
             metrics=["accuracy"],
         )
@@ -248,8 +276,8 @@ def train():
         verbose=1,
         save_best_only=True,
         save_weights_only=True,
-        monitor="val_acc",
-        mode="max",
+        monitor="val_loss",
+        mode="min",
     )
     tensorboard_callback = keras.callbacks.TensorBoard(f"./logs/", update_freq="epoch")
 

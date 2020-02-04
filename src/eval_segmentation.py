@@ -101,7 +101,7 @@ def predict_images(paths, model, output_directory):
             )
             img = img.resize(orig_sizes[i])
             p = ".".join(os.path.basename(paths[i]).split(".")[0:-1])
-            img.save(f"{output_directory}/{p}_segmentation.png")
+            img.save(f"{output_directory}/{p}_{j}_segmentation.png")
 
 
 def evaluate():

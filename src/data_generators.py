@@ -10,7 +10,6 @@ from PIL import Image
 from pycocotools.coco import COCO
 from utils import resize_and_crop, parse_labelme_file
 
-
 def coco_data_generator(path, batch_size, class_count):
     coco = COCO(path)
     coco.createIndex()
@@ -87,6 +86,97 @@ def hazmat_data_generator(samples_dir, batch_size, picture_size, class_count):
 
     return generator(samples_dir, batch_size, class_count), len(os.listdir(samples_dir))
 
+def hltid_data_generator(
+    images_dir, masks_dir, batch_size, class_count, picture_size, model_size="large"
+):
+    samples = []
+    for d in os.listdir(images_dir):
+        for f in os.listdir(os.path.join(images_dir, d)):
+            if "mask" not in f and f[-3:] == "jpg":
+                samples.append((
+                    os.path.join(images_dir, d, f),
+                    os.path.join(masks_dir, d, f"{f[:-4]}_mask.png"),
+                    int(d)-1
+                ))
+
+    def generator(images_dir, masks_dir, batch_size, class_count):
+        while True:
+            random.shuffle(samples)
+            images = np.zeros(
+                (batch_size, picture_size, picture_size, 3), dtype=np.uint8
+            )
+            if model_size == "large":
+                labels = np.zeros(
+                    (batch_size, picture_size // 8, picture_size // 8, class_count),
+                    dtype=np.uint8,
+                )
+            else:
+                labels = np.zeros(
+                    (batch_size, picture_size // 16, picture_size // 16, class_count),
+                    dtype=np.uint8,
+                )
+            count = 0
+
+            for image_path, mask_path, label in samples:
+                centering = (round(random.random(), 1), round(random.random(), 1))
+
+                try:
+                    angle = random.choice([0, 45, 90, 270])
+                    image = Image.open(image_path).rotate(angle)
+                    images[count, :, :, :] = resize_and_crop(
+                        image, picture_size, centering=centering
+                    )
+
+                    #Image.fromarray(images[count, :, :, :]).save(f"out_debug/image_{count}.jpg")
+
+                    mask = Image.open(mask_path).rotate(angle)
+
+                    if model_size == "large":
+                        labels[count, :, :, label] = resize_and_crop(
+                            mask, picture_size // 8, centering=centering, rgb=False
+                        )
+                    else:
+                        labels[count, :, :, label] = resize_and_crop(
+                            mask, picture_size // 16, centering=centering, rgb=False
+                        )
+                    labels[count, labels[count, :, :, :] > 0] = 1
+
+                    #Image.fromarray(labels[count, :, :, label] * 255).save(f"out_debug/mask_{count}.png")
+
+                    count += 1
+                except Exception as ex:
+                    print(ex)
+
+                if count == batch_size:
+                    yield images, labels
+                    images = np.zeros(
+                        (batch_size, picture_size, picture_size, 3), dtype=np.uint8
+                    )
+
+                    if model_size == "large":
+                        labels = np.zeros(
+                            (
+                                batch_size,
+                                picture_size // 8,
+                                picture_size // 8,
+                                class_count,
+                            )
+                        )
+                    else:
+                        labels = np.zeros(
+                            (
+                                batch_size,
+                                picture_size // 16,
+                                picture_size // 16,
+                                class_count,
+                            )
+                        )
+
+                    count = 0
+    return (
+        generator(images_dir, masks_dir, batch_size, class_count),
+        len(samples),
+    )
 
 def isic_segmentation_data_generator(
     images_dir, masks_dir, batch_size, class_count, picture_size, model_size="large"
